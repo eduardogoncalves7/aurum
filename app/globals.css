@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+:root {
+  --background: #08090a;
+  --background-secondary: #111313;
+  --background-elevated: #17191a;
+  --gold: #ddaf45;
+  --gold-light: #e9c876;
+  --gold-dark: #80662b;
+  --foreground: #f5f2ea;
+  --muted: #b9b5ac;
+  --muted-dark: #8a8680;
+  --border: rgba(221, 175, 69, 0.18);
+  --border-strong: rgba(221, 175, 69, 0.4);
+  --success: #6e9b6e;
+  --danger: #c9645a;
+
+  --font-display: "Archivo", ui-sans-serif, sans-serif;
+  --font-body: "Inter", ui-sans-serif, sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-secondary: var(--background-secondary);
+  --color-background-elevated: var(--background-elevated);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-dark: var(--gold-dark);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-dark: var(--muted-dark);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(221, 175, 69, 0.06), transparent),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0px, transparent 1px, transparent 2px);
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--background);
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Thin scrollbar for horizontal chip rows */
+.scrollbar-thin::-webkit-scrollbar {
+  height: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
