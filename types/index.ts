@@ -55,7 +55,9 @@ export interface Service {
   name: string;
   shortDescription: string;
   description?: string;
-  image: string;
+  /** Caminho da imagem em /public — ver getServiceImagePath() para a
+   * convenção de nome de arquivo (id do serviço). */
+  image?: string;
   pricingType: PricingType;
   vehicleDimension: VehicleDimension;
   /** preços por categoria de veículo, quando vehicleDimension !== "none" */
@@ -129,12 +131,16 @@ export interface Quote {
   createdAt: string;
 }
 
+/** Como o cliente prefere levar o veículo até a Aurum. */
+export type DeliveryMethod = "dropoff" | "pickup";
+
 export interface Appointment {
   id: string;
   quoteId: string;
   date: string; // ISO date, yyyy-mm-dd
   time: string; // HH:mm
   status: "pending" | "confirmed" | "cancelled";
+  deliveryMethod: DeliveryMethod;
 }
 
 /** Resultado do cálculo de preço de um serviço para um veículo específico */

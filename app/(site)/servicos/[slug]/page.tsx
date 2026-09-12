@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/formatters";
 import { getServiceDisplayPrice } from "@/lib/pricing";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { ServiceImage } from "@/components/home/ServiceImage";
 
 export function generateStaticParams() {
   return services.map((s) => ({ slug: s.id }));
@@ -37,7 +38,12 @@ export default async function ServiceDetailPage({
       <h1 className="mt-3 font-display text-3xl font-black text-foreground sm:text-4xl">
         {service.name}
       </h1>
-      <p className="mt-3 max-w-2xl text-muted">
+
+      <div className="mt-5 aspect-[16/9] w-full overflow-hidden rounded-2xl bg-background-elevated">
+        <ServiceImage service={service} />
+      </div>
+
+      <p className="mt-5 max-w-2xl text-muted">
         {service.description ?? service.shortDescription}
       </p>
 

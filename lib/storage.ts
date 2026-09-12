@@ -14,6 +14,7 @@ const KEYS = {
   appointments: "aurum_appointments",
   config: "aurum_config",
   serviceOverrides: "aurum_service_overrides",
+  session: "aurum_session",
 } as const;
 
 export interface AurumConfig {
@@ -25,10 +26,10 @@ export interface AurumConfig {
 }
 
 const defaultConfig: AurumConfig = {
-  whatsappDestination: "",
-  address: "Ipatinga, MG",
+  whatsappDestination: "553171369282",
+  address: "Rua Itaparica, 1494, Giovanini, Coronel Fabriciano - MG, 35170-101",
   instagram: "@aurumdetailing",
-  phone: "(31) 90000-0000",
+  phone: "(31) 7136-9282",
   hours: "Seg a Sáb, 08h às 18h",
 };
 
@@ -184,4 +185,56 @@ export function getConfig(): AurumConfig {
 
 export function saveConfig(config: AurumConfig) {
   write(KEYS.config, config);
+}
+
+// ------------------------------------------------------------------ Sessão
+// "Login" simples do cliente no site: nome + telefone ficam guardados no
+// navegador para não pedir os mesmos dados de novo numa próxima visita.
+
+export interface ClientSession {
+  name: string;
+  phone: string;
+}
+
+export function getSession(): ClientSession | null {
+  return read<ClientSession | null>(KEYS.session, null);
+}
+
+export function setSession(name: string, phone: string) {
+  write(KEYS.session, { name, phone });
+}
+
+export function clearSession() {
+  if (!isBrowser()) return;
+  window.localStorage.removeItem(KEYS.session);
+}
+
+// ------------------------------------------------- Histórico de agendamentos
+
+export interface AppointmentWithDetails {
+  appointment: Appointment;
+  quote: Quote;
+  vehicle: Vehicle | null;
+}
+
+/** Todos os agendamentos de um cliente, do mais recente pro mais antigo —
+ * usado na seção "Meus Agendamentos". */
+export function getAppointmentsForPhone(phone: string): AppointmentWithDetails[] {
+  const customer = findCustomerByPhone(phone);
+  if (!customer) return [];
+
+  const quotes = getQuotes().filter((q) => q.customerId === customer.id);
+  const quoteById = new Map(quotes.map((q) => [q.id, q]));
+  const vehicles = getVehicles();
+
+  return getAppointments()
+    .filter((a) => quoteById.has(a.quoteId))
+    .map((appointment) => {
+      const quote = quoteById.get(appointment.quoteId)!;
+      const vehicle = vehicles.find((v) => v.id === quote.vehicleId) ?? null;
+      return { appointment, quote, vehicle };
+    })
+    .sort((a, b) => `${b.appointment.date}T${b.appointment.time}`.localeCompare(
+      `${a.appointment.date}T${a.appointment.time}`
+    ));
 }

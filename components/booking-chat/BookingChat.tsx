@@ -1,21 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getServiceById, isServiceAvailableForVehicleType, services } from "@/lib/data/services";
 import { calculateQuoteTotal } from "@/lib/pricing";
 import { vehicleOptions, vehicleSummaryLabel } from "@/lib/vehicle";
-import { buildAppointmentWhatsAppMessage, buildWhatsAppLink, buildWhatsAppMessage } from "@/lib/whatsapp";
+import { buildAppointmentWhatsAppMessage, buildCancelWhatsAppMessage, buildWhatsAppLink, buildWhatsAppMessage } from "@/lib/whatsapp";
 import {
+  clearSession,
   getAppointments,
   getConfig,
+  getSession,
   saveAppointment,
   saveQuote,
   saveVehicle,
+  setSession,
   updateQuoteStatus,
   upsertCustomer,
 } from "@/lib/storage";
-import { Quote, Vehicle, VehicleChatChoice } from "@/types";
+import { Quote, Vehicle, VehicleChatChoice, DeliveryMethod } from "@/types";
 import { formatCurrency, formatDatePtBr, isValidPhone, maskPhone } from "@/lib/formatters";
 
 import { ChatMessage, UserAnswerBubble } from "@/components/booking-chat/ChatMessage";
@@ -25,7 +28,8 @@ import { ServiceListItem } from "@/components/booking-chat/ServiceListItem";
 import { DateSelector } from "@/components/booking-chat/DateSelector";
 import { TimeSelector } from "@/components/booking-chat/TimeSelector";
 import { EstimateSummary } from "@/components/booking-chat/EstimateSummary";
-import { WhatsAppMessagePreview } from "@/components/booking-chat/WhatsAppMessagePreview";
+import { DeliveryMethodSelector } from "@/components/booking-chat/DeliveryMethodSelector";
+import { WhatsAppRedirect } from "@/components/booking-chat/WhatsAppRedirect";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { CalendarCheck } from "lucide-react";
@@ -38,6 +42,7 @@ type Step =
   | "quote"
   | "date"
   | "time"
+  | "location"
   | "confirmation";
 
 const STEP_ORDER: Step[] = [
@@ -48,6 +53,7 @@ const STEP_ORDER: Step[] = [
   "quote",
   "date",
   "time",
+  "location",
   "confirmation",
 ];
 
@@ -58,6 +64,8 @@ export function BookingChat() {
   const preselected = preselectedServiceId ? getServiceById(preselectedServiceId) : undefined;
 
   const [step, setStep] = useState<Step>("name");
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [isReturning, setIsReturning] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [vehicleChoice, setVehicleChoice] = useState<{
@@ -68,7 +76,31 @@ export function BookingChat() {
   );
   const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
+
+  // Reconhece o cliente que já "logou" antes (nome + telefone salvos no
+  // navegador) e pula direto pra escolha de veículo.
+  useEffect(() => {
+    const session = getSession();
+    /* eslint-disable react-hooks/set-state-in-effect -- lê localStorage; precisa rodar após a hidratação para não gerar mismatch SSR/cliente */
+    if (session) {
+      setName(session.name);
+      setPhone(session.phone);
+      setIsReturning(true);
+      setStep("vehicle");
+    }
+    setSessionChecked(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+
+  function handleSwitchAccount() {
+    clearSession();
+    setName("");
+    setPhone("");
+    setIsReturning(false);
+    setStep("name");
+  }
 
   const vehicle: Vehicle | null = useMemo(() => {
     if (!vehicleChoice) return null;
@@ -152,13 +184,14 @@ export function BookingChat() {
   }
 
   function handleConfirmBooking() {
-    if (!date || !time) return;
+    if (!date || !time || !deliveryMethod) return;
     const currentQuote = quote ?? persistQuote();
     saveAppointment({
       quoteId: currentQuote.id,
       date,
       time,
       status: "pending",
+      deliveryMethod,
     });
     updateQuoteStatus(currentQuote.id, "scheduled");
     setStep("confirmation");
@@ -173,6 +206,8 @@ export function BookingChat() {
   const selectedServiceNames = selectedServiceIds
     .map((id) => getServiceById(id)?.name)
     .filter((n): n is string => !!n);
+
+  if (!sessionChecked) return null;
 
   return (
     <div className="min-h-[calc(100vh-0px)] bg-background">
@@ -217,7 +252,10 @@ export function BookingChat() {
           <Button
             size="lg"
             disabled={!isValidPhone(phone)}
-            onClick={() => goTo("vehicle")}
+            onClick={() => {
+              setSession(name, phone);
+              goTo("vehicle");
+            }}
           >
             Continuar
           </Button>
@@ -226,7 +264,23 @@ export function BookingChat() {
 
       {step === "vehicle" && (
         <StepContainer onBack={() => back("vehicle")}>
-          <UserAnswerBubble>{phone}</UserAnswerBubble>
+          {isReturning ? (
+            <>
+              <ChatMessage>
+                Oi de novo, {name.split(" ")[0]}! Vamos continuar seu
+                orçamento.
+              </ChatMessage>
+              <button
+                type="button"
+                onClick={handleSwitchAccount}
+                className="self-start text-xs text-muted underline underline-offset-2 hover:text-foreground"
+              >
+                Não é você? Trocar
+              </button>
+            </>
+          ) : (
+            <UserAnswerBubble>{phone}</UserAnswerBubble>
+          )}
           <ChatMessage>Qual veículo vamos cuidar?</ChatMessage>
           <div className="flex flex-col gap-2.5">
             {vehicleOptions.map((opt) => (
@@ -327,13 +381,28 @@ export function BookingChat() {
           <UserAnswerBubble>{date && formatDatePtBr(date)}</UserAnswerBubble>
           <ChatMessage>Escolha um horário</ChatMessage>
           <TimeSelector value={time} onChange={setTime} bookedSlots={bookedSlotsForDate} />
-          <Button size="lg" disabled={!time} onClick={handleConfirmBooking}>
+          <Button size="lg" disabled={!time} onClick={() => goTo("location")}>
+            Continuar
+          </Button>
+        </StepContainer>
+      )}
+
+      {step === "location" && (
+        <StepContainer onBack={() => back("location")}>
+          <UserAnswerBubble>{time}</UserAnswerBubble>
+          <ChatMessage>Como prefere levar o veículo até a Aurum?</ChatMessage>
+          <DeliveryMethodSelector
+            value={deliveryMethod}
+            onChange={setDeliveryMethod}
+            address={getConfig().address}
+          />
+          <Button size="lg" disabled={!deliveryMethod} onClick={handleConfirmBooking}>
             Confirmar agendamento
           </Button>
         </StepContainer>
       )}
 
-      {step === "confirmation" && date && time && (
+      {step === "confirmation" && date && time && deliveryMethod && (
         <StepContainer>
           <div className="flex flex-col items-center gap-1 py-2 text-center">
             <CalendarCheck className="text-gold" size={36} strokeWidth={1.5} />
@@ -347,6 +416,14 @@ export function BookingChat() {
             <Field label="Veículo" value={vehicleSummaryLabel(vehicle)} />
             <Field label="Data" value={formatDatePtBr(date)} />
             <Field label="Horário" value={time} />
+            <Field
+              label="Veículo vai"
+              value={
+                deliveryMethod === "dropoff"
+                  ? "Até a loja"
+                  : "Busca em casa (a combinar)"
+              }
+            />
             <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
               <span className="font-display font-bold text-foreground">
                 Estimativa
@@ -361,16 +438,7 @@ export function BookingChat() {
             O valor final pode mudar após a avaliação do veículo.
           </p>
 
-          <WhatsAppMessagePreview
-            message={buildAppointmentWhatsAppMessage({
-              name,
-              phone,
-              vehicleLabel: vehicleSummaryLabel(vehicle),
-              lineItems,
-              total,
-              dateLabel: formatDatePtBr(date),
-              time,
-            })}
+          <WhatsAppRedirect
             whatsappLink={buildWhatsAppLink(
               getConfig().whatsappDestination,
               buildAppointmentWhatsAppMessage({
@@ -381,18 +449,35 @@ export function BookingChat() {
                 total,
                 dateLabel: formatDatePtBr(date),
                 time,
+                deliveryMethod,
+                address: getConfig().address,
               })
             )}
-            whatsappDestination={getConfig().whatsappDestination}
           />
 
           <Button
             size="lg"
             variant="ghost"
-            onClick={() => router.push("/servicos")}
+            onClick={() => router.push("/")}
           >
-            Voltar aos serviços
+            Voltar à tela inicial
           </Button>
+
+          <a
+            href={buildWhatsAppLink(
+              getConfig().whatsappDestination,
+              buildCancelWhatsAppMessage({
+                serviceNames: selectedServiceNames,
+                dateLabel: formatDatePtBr(date),
+                time,
+              })
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-center text-xs text-muted-dark underline underline-offset-2 hover:text-foreground"
+          >
+            Cancelar este agendamento
+          </a>
         </StepContainer>
       )}
     </div>

@@ -1,5 +1,11 @@
-import { QuoteLineItem } from "@/types";
+import { DeliveryMethod, QuoteLineItem } from "@/types";
 import { formatCurrency } from "@/lib/formatters";
+
+function deliveryMethodLabel(deliveryMethod: DeliveryMethod, address: string): string {
+  return deliveryMethod === "dropoff"
+    ? `Vou levar o veículo até a loja (${address})`
+    : "Quero o serviço de busca em casa (a combinar)";
+}
 
 export function buildWhatsAppMessage(params: {
   name: string;
@@ -42,8 +48,10 @@ export function buildAppointmentWhatsAppMessage(params: {
   total: number;
   dateLabel: string;
   time: string;
+  deliveryMethod: DeliveryMethod;
+  address: string;
 }): string {
-  const { name, phone, vehicleLabel, lineItems, total, dateLabel, time } = params;
+  const { name, phone, vehicleLabel, lineItems, total, dateLabel, time, deliveryMethod, address } = params;
 
   const servicesText = lineItems.map((item) => `- ${item.name}`).join("\n");
 
@@ -62,10 +70,33 @@ export function buildAppointmentWhatsAppMessage(params: {
     `Data: ${dateLabel}`,
     `Horário: ${time}`,
     "",
+    deliveryMethodLabel(deliveryMethod, address),
+    "",
     `Estimativa: ${formatCurrency(total)}`,
     "",
     "Entendo que o valor final pode mudar após a avaliação do veículo.",
   ].join("\n");
+}
+
+/** Mensagem de cancelamento — usada tanto logo após agendar quanto na
+ * seção "Meus agendamentos". */
+export function buildCancelWhatsAppMessage(params: {
+  serviceNames: string[];
+  dateLabel?: string;
+  time?: string;
+}): string {
+  const { serviceNames, dateLabel, time } = params;
+
+  const lines = ["Olá, Aurum Detailing!", "", "Quero cancelar o serviço marcado."];
+
+  if (serviceNames.length > 0) {
+    lines.push("", `Serviço: ${serviceNames.join(", ")}`);
+  }
+  if (dateLabel && time) {
+    lines.push(`Data: ${dateLabel}`, `Horário: ${time}`);
+  }
+
+  return lines.join("\n");
 }
 
 /** WHATSAPP_DESTINATION deve ser configurado via variável de ambiente ou no

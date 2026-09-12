@@ -9,23 +9,41 @@ interface DayOption {
   dateLabel: string;
 }
 
+/** Gera dias úteis a partir de hoje, pulando domingos — a Aurum não atende
+ * aos domingos. */
 function buildDayOptions(count: number): DayOption[] {
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const weekdayFmt = new Intl.DateTimeFormat("pt-BR", { weekday: "long" });
   const dateFmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" });
 
-  return Array.from({ length: count }, (_, i) => {
+  const options: DayOption[] = [];
+  let diffDays = 0;
+
+  while (options.length < count) {
     const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    let label: string;
-    if (i === 0) label = "Hoje";
-    else if (i === 1) label = "Amanhã";
-    else {
-      const weekday = weekdayFmt.format(d);
-      label = weekday.charAt(0).toUpperCase() + weekday.slice(1).replace("-feira", "");
+    d.setDate(today.getDate() + diffDays);
+
+    if (d.getDay() !== 0) {
+      let label: string;
+      if (diffDays === 0) label = "Hoje";
+      else if (diffDays === 1) label = "Amanhã";
+      else {
+        const weekday = weekdayFmt.format(d);
+        label = weekday.charAt(0).toUpperCase() + weekday.slice(1).replace("-feira", "");
+      }
+
+      options.push({
+        iso: d.toISOString().slice(0, 10),
+        label,
+        dateLabel: dateFmt.format(d),
+      });
     }
-    return { iso: d.toISOString().slice(0, 10), label, dateLabel: dateFmt.format(d) };
-  });
+
+    diffDays += 1;
+  }
+
+  return options;
 }
 
 interface Props {

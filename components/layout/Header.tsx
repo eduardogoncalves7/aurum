@@ -1,15 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/Button";
+import { getSession } from "@/lib/storage";
 
-const navLinks = [{ href: "/servicos", label: "Serviços" }];
+const baseNavLinks = [{ href: "/servicos", label: "Serviços" }];
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lê localStorage; precisa rodar após a hidratação para não gerar mismatch SSR/cliente
+    setLoggedIn(!!getSession());
+  }, []);
+
+  const navLinks = loggedIn
+    ? [...baseNavLinks, { href: "/agendamentos", label: "Meus agendamentos" }]
+    : baseNavLinks;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">

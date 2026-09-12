@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Service } from "@/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { ServiceImage } from "@/components/home/ServiceImage";
 import { formatCurrency } from "@/lib/formatters";
 import { getServiceDisplayPrice } from "@/lib/pricing";
 
@@ -12,10 +13,7 @@ export function ServiceCard({ service }: { service: Service }) {
   return (
     <Card className="group flex flex-col overflow-hidden transition-transform duration-200 hover:-translate-y-1 hover:border-border-strong">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-background-elevated">
-        <div
-          className="h-full w-full bg-gradient-to-br from-gold/15 via-background-elevated to-background"
-          aria-hidden
-        />
+        <ServiceImage service={service} className="absolute inset-0" />
         {service.featured && (
           <Badge tone="gold" className="absolute left-3 top-3">
             Mais procurado
