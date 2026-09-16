@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 
-const ALL_SLOTS = ["09:00", "09:40", "10:20", "11:00", "14:00", "15:20", "16:00", "16:40"];
+const ALL_SLOTS = ["08:00", "09:00", "10:00", "11:00", "14:00", "16:00"];
 
 interface Props {
   value: string | null;

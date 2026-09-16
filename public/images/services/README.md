@@ -7,30 +7,28 @@ adicionar/trocar uma imagem, só substituir o arquivo aqui.
 Se um arquivo não existir, o site mostra um fundo dourado no lugar (sem
 quebrar o layout).
 
-## Já adicionadas (9/18)
+## Catálogo completo (18/18) ✔
 
 ```
 revestimento-ceramico.jpg
-higienizacao-completa.jpg
-limpeza-manutencao.jpg
-undercar.jpg
-limpeza-moto-ouro.jpg
-limpeza-moto-premium.jpg
 polimento-comercial.jpg
 polimento-tecnico.jpg
-ppf-moto.jpg
-```
-
-## Ainda faltam (9/18)
-
-```
+limpeza-manutencao.jpg
 limpeza-tecnica.jpg
 limpeza-premium.jpg
-undercar-premium.jpg
 limpeza-motor.jpg
-higienizacao-cintos.jpg
+undercar.jpg
+undercar-premium.jpg
+limpeza-moto-ouro.jpg
+limpeza-moto-premium.jpg
+ppf-moto.jpg
+higienizacao-completa.jpg
 higienizacao-teto.jpg
-higienizacao-ar.jpg
 higienizacao-carpete.jpg
 higienizacao-bancos.jpg
+higienizacao-cintos.jpg
+higienizacao-ar.jpg
 ```
+
+Pra trocar qualquer uma no futuro, é só substituir o arquivo correspondente
+por outro com o mesmo nome.

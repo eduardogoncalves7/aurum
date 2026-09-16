@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getServiceById, isServiceAvailableForVehicleType, services } from "@/lib/data/services";
+import { getServiceById, isServiceAvailableForVehicleType, limpezaAddonServiceIds, limpezaTierServiceIds, services } from "@/lib/data/services";
 import { calculateQuoteTotal } from "@/lib/pricing";
 import { vehicleOptions, vehicleSummaryLabel } from "@/lib/vehicle";
 import { buildAppointmentWhatsAppMessage, buildCancelWhatsAppMessage, buildWhatsAppLink, buildWhatsAppMessage } from "@/lib/whatsapp";
@@ -29,6 +29,7 @@ import { DateSelector } from "@/components/booking-chat/DateSelector";
 import { TimeSelector } from "@/components/booking-chat/TimeSelector";
 import { EstimateSummary } from "@/components/booking-chat/EstimateSummary";
 import { DeliveryMethodSelector } from "@/components/booking-chat/DeliveryMethodSelector";
+import { LimpezaGroupCard } from "@/components/booking-chat/LimpezaGroupCard";
 import { WhatsAppRedirect } from "@/components/booking-chat/WhatsAppRedirect";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -130,6 +131,22 @@ export function BookingChat() {
         ? prev.filter((id) => id !== serviceId)
         : [...prev, serviceId]
     );
+  }
+
+  /** Escolha de tipo de Limpeza é exclusiva (só um tipo por vez). Ao trocar
+   * ou desmarcar o tipo, os adicionais (undercar/higienização) somem junto
+   * — eles só existem atrelados a uma Limpeza. */
+  function selectLimpezaTier(tierId: string) {
+    setSelectedServiceIds((prev) => {
+      const isCurrentlySelected = prev.includes(tierId);
+      let next = prev.filter((id) => !limpezaTierServiceIds.includes(id));
+      if (isCurrentlySelected) {
+        next = next.filter((id) => !limpezaAddonServiceIds.includes(id));
+      } else {
+        next = [...next, tierId];
+      }
+      return next;
+    });
   }
 
   const selections = useMemo(
@@ -321,14 +338,28 @@ export function BookingChat() {
             Qual serviço você deseja? Você pode escolher mais de um.
           </ChatMessage>
           <div className="flex flex-col gap-2.5">
-            {availableServices.map((s) => (
-              <ServiceListItem
-                key={s.id}
-                service={s}
-                selected={selectedServiceIds.includes(s.id)}
-                onClick={() => toggleService(s.id)}
+            {vehicle?.type === "car" && (
+              <LimpezaGroupCard
+                vehicle={vehicle}
+                selectedServiceIds={selectedServiceIds}
+                onSelectTier={selectLimpezaTier}
+                onToggleAddon={toggleService}
               />
-            ))}
+            )}
+            {availableServices
+              .filter(
+                (s) =>
+                  !limpezaTierServiceIds.includes(s.id) &&
+                  !limpezaAddonServiceIds.includes(s.id)
+              )
+              .map((s) => (
+                <ServiceListItem
+                  key={s.id}
+                  service={s}
+                  selected={selectedServiceIds.includes(s.id)}
+                  onClick={() => toggleService(s.id)}
+                />
+              ))}
           </div>
           {selectedServiceIds.length > 0 && (
             <div className="flex items-center justify-between rounded-lg border border-border bg-background-secondary px-4 py-3 text-sm">

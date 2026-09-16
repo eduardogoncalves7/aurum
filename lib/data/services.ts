@@ -327,6 +327,28 @@ export function getServiceImagePath(service: Service): string {
   return service.image ?? `/images/services/${service.id}.jpg`;
 }
 
+/** As 3 opções de Limpeza (carro) — no fluxo de orçamento aparecem
+ * agrupadas sob um único item "Limpeza" que expande pra escolher o tipo,
+ * em vez de 3 linhas separadas na lista principal. */
+export const limpezaTierServiceIds = [
+  "limpeza-manutencao",
+  "limpeza-tecnica",
+  "limpeza-premium",
+];
+
+/** Undercar + Higienização — só ficam disponíveis como adicionais dentro
+ * da escolha de Limpeza (carro), não aparecem soltos na lista principal. */
+export const limpezaAddonServiceIds = [
+  "undercar",
+  "undercar-premium",
+  "higienizacao-cintos",
+  "higienizacao-teto",
+  "higienizacao-ar",
+  "higienizacao-carpete",
+  "higienizacao-bancos",
+  "higienizacao-completa",
+];
+
 /** Um serviço sem `vehicleTypes` vale para qualquer veículo; os demais só
  * aparecem para o(s) tipo(s) declarado(s). */
 export function isServiceAvailableForVehicleType(
