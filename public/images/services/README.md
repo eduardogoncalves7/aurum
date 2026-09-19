@@ -7,10 +7,12 @@ adicionar/trocar uma imagem, só substituir o arquivo aqui.
 Se um arquivo não existir, o site mostra um fundo dourado no lugar (sem
 quebrar o layout).
 
-## Catálogo completo (18/18) ✔
+## Catálogo completo (19/19) ✔
 
 ```
 revestimento-ceramico.jpg
+ppf-carro.jpg
+ppf-moto.jpg
 polimento-comercial.jpg
 polimento-tecnico.jpg
 limpeza-manutencao.jpg
@@ -21,7 +23,6 @@ undercar.jpg
 undercar-premium.jpg
 limpeza-moto-ouro.jpg
 limpeza-moto-premium.jpg
-ppf-moto.jpg
 higienizacao-completa.jpg
 higienizacao-teto.jpg
 higienizacao-carpete.jpg

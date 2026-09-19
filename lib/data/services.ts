@@ -47,30 +47,13 @@ export const services: Service[] = [
         gift: ["Descontaminação dos vidros"],
       },
       {
-        id: "2-anos",
-        label: "Proteção de 2 anos",
-        prices: { small: 1700, medium: 1900, large: 2100 },
-        gift: ["Descontaminação dos vidros", "Proteção dos vidros"],
-      },
-      {
         id: "3-anos",
         label: "Proteção de 3 anos",
-        prices: { small: 2200, medium: 2400, large: 2600 },
+        prices: { small: 2500, medium: 2700, large: 3000 },
         gift: [
           "Descontaminação dos vidros",
           "Proteção",
-          "Revitalização dos faróis",
-        ],
-      },
-      {
-        id: "4-anos",
-        label: "Proteção de 4 anos",
-        prices: { small: 2700, medium: 2900, large: 3100 },
-        gift: [
-          "Descontaminação dos vidros",
-          "Proteção",
-          "Revitalização dos faróis",
-          "Vitrificação das rodas",
+          "Proteção nas rodas e caixas de roda",
         ],
       },
     ],
@@ -80,6 +63,20 @@ export const services: Service[] = [
     category: "protecao",
     vehicleTypes: ["motorcycle"],
     name: "PPF em Motos",
+    shortDescription: "Película de proteção contra riscos e impactos, credenciado ALTA.",
+    description:
+      "Película transparente de alta resistência aplicada sobre a pintura do veículo para protegê-la contra riscos, impactos de pedras, arranhões leves, manchas e ação do tempo, preservando o brilho e a aparência original por muito mais tempo. Serviço credenciado ALTA.",
+    pricingType: "starting_at",
+    vehicleDimension: "none",
+    startingPrice: 2390,
+    benefits: ["Proteção por até 10 anos"],
+    note: "Consulte condições.",
+  },
+  {
+    id: "ppf-carro",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    name: "PPF em Carro",
     shortDescription: "Película de proteção contra riscos e impactos, credenciado ALTA.",
     description:
       "Película transparente de alta resistência aplicada sobre a pintura do veículo para protegê-la contra riscos, impactos de pedras, arranhões leves, manchas e ação do tempo, preservando o brilho e a aparência original por muito mais tempo. Serviço credenciado ALTA.",
@@ -239,7 +236,7 @@ export const services: Service[] = [
       "Desmontagem das carenagens, dos bancos e do pião para um detalhamento completo: tanque, carenagens, motor, chassi, plásticos e borrachas.",
     pricingType: "starting_at",
     vehicleDimension: "motorcycle",
-    startingPrice: 250,
+    startingPrice: 300,
     includes: [
       "Limpeza detalhada de toda a motocicleta",
       "Lavagem da pintura",
@@ -268,7 +265,7 @@ export const services: Service[] = [
     shortDescription: "Limpeza do forro de teto e das colunas internas.",
     pricingType: "fixed",
     vehicleDimension: "none",
-    fixedPrice: 120,
+    fixedPrice: 200,
   },
   {
     id: "higienizacao-ar",
@@ -299,7 +296,7 @@ export const services: Service[] = [
     shortDescription: "Limpeza profunda de bancos e forros das portas.",
     pricingType: "fixed",
     vehicleDimension: "none",
-    fixedPrice: 300,
+    fixedPrice: 350,
   },
   {
     id: "higienizacao-completa",
@@ -336,11 +333,14 @@ export const limpezaTierServiceIds = [
   "limpeza-premium",
 ];
 
-/** Undercar + Higienização — só ficam disponíveis como adicionais dentro
- * da escolha de Limpeza (carro), não aparecem soltos na lista principal. */
-export const limpezaAddonServiceIds = [
-  "undercar",
-  "undercar-premium",
+/** Undercar — só fica disponível como adicional dentro da escolha de
+ * Limpeza (carro), não aparece solto na lista principal. */
+export const limpezaAddonServiceIds = ["undercar", "undercar-premium"];
+
+/** As 6 Higienizações — no fluxo de orçamento aparecem agrupadas sob um
+ * único item "Higienização" (categoria própria, separada da Limpeza) que
+ * expande pra marcar quantas quiser. */
+export const higienizacaoServiceIds = [
   "higienizacao-cintos",
   "higienizacao-teto",
   "higienizacao-ar",

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getServiceById, isServiceAvailableForVehicleType, limpezaAddonServiceIds, limpezaTierServiceIds, services } from "@/lib/data/services";
+import { getServiceById, higienizacaoServiceIds, isServiceAvailableForVehicleType, limpezaAddonServiceIds, limpezaTierServiceIds, services } from "@/lib/data/services";
 import { calculateQuoteTotal } from "@/lib/pricing";
 import { vehicleOptions, vehicleSummaryLabel } from "@/lib/vehicle";
 import { buildAppointmentWhatsAppMessage, buildCancelWhatsAppMessage, buildWhatsAppLink, buildWhatsAppMessage } from "@/lib/whatsapp";
@@ -30,6 +30,7 @@ import { TimeSelector } from "@/components/booking-chat/TimeSelector";
 import { EstimateSummary } from "@/components/booking-chat/EstimateSummary";
 import { DeliveryMethodSelector } from "@/components/booking-chat/DeliveryMethodSelector";
 import { LimpezaGroupCard } from "@/components/booking-chat/LimpezaGroupCard";
+import { HigienizacaoGroupCard } from "@/components/booking-chat/HigienizacaoGroupCard";
 import { WhatsAppRedirect } from "@/components/booking-chat/WhatsAppRedirect";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -346,11 +347,19 @@ export function BookingChat() {
                 onToggleAddon={toggleService}
               />
             )}
+            {vehicle?.type === "car" && (
+              <HigienizacaoGroupCard
+                vehicle={vehicle}
+                selectedServiceIds={selectedServiceIds}
+                onToggle={toggleService}
+              />
+            )}
             {availableServices
               .filter(
                 (s) =>
                   !limpezaTierServiceIds.includes(s.id) &&
-                  !limpezaAddonServiceIds.includes(s.id)
+                  !limpezaAddonServiceIds.includes(s.id) &&
+                  !higienizacaoServiceIds.includes(s.id)
               )
               .map((s) => (
                 <ServiceListItem
