@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getServiceById, higienizacaoServiceIds, isServiceAvailableForVehicleType, limpezaAddonServiceIds, limpezaTierServiceIds, services } from "@/lib/data/services";
+import { getServiceById, higienizacaoServiceIds, isServiceAvailableForVehicleType, limpezaAddonServiceIds, limpezaTierServiceIds, revestimentoTierServiceIds, services } from "@/lib/data/services";
 import { calculateQuoteTotal } from "@/lib/pricing";
 import { vehicleOptions, vehicleSummaryLabel } from "@/lib/vehicle";
 import { buildAppointmentWhatsAppMessage, buildCancelWhatsAppMessage, buildWhatsAppLink, buildWhatsAppMessage } from "@/lib/whatsapp";
@@ -31,6 +31,7 @@ import { EstimateSummary } from "@/components/booking-chat/EstimateSummary";
 import { DeliveryMethodSelector } from "@/components/booking-chat/DeliveryMethodSelector";
 import { LimpezaGroupCard } from "@/components/booking-chat/LimpezaGroupCard";
 import { HigienizacaoGroupCard } from "@/components/booking-chat/HigienizacaoGroupCard";
+import { RevestimentoGroupCard } from "@/components/booking-chat/RevestimentoGroupCard";
 import { WhatsAppRedirect } from "@/components/booking-chat/WhatsAppRedirect";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -147,6 +148,16 @@ export function BookingChat() {
         next = [...next, tierId];
       }
       return next;
+    });
+  }
+
+  /** Escolha de duração do Revestimento Cerâmico é exclusiva (só uma opção
+   * por vez, sem adicionais atrelados). */
+  function selectRevestimentoTier(tierId: string) {
+    setSelectedServiceIds((prev) => {
+      const isCurrentlySelected = prev.includes(tierId);
+      const next = prev.filter((id) => !revestimentoTierServiceIds.includes(id));
+      return isCurrentlySelected ? next : [...next, tierId];
     });
   }
 
@@ -340,6 +351,13 @@ export function BookingChat() {
           </ChatMessage>
           <div className="flex flex-col gap-2.5">
             {vehicle?.type === "car" && (
+              <RevestimentoGroupCard
+                vehicle={vehicle}
+                selectedServiceIds={selectedServiceIds}
+                onSelectTier={selectRevestimentoTier}
+              />
+            )}
+            {vehicle?.type === "car" && (
               <LimpezaGroupCard
                 vehicle={vehicle}
                 selectedServiceIds={selectedServiceIds}
@@ -357,6 +375,7 @@ export function BookingChat() {
             {availableServices
               .filter(
                 (s) =>
+                  !revestimentoTierServiceIds.includes(s.id) &&
                   !limpezaTierServiceIds.includes(s.id) &&
                   !limpezaAddonServiceIds.includes(s.id) &&
                   !higienizacaoServiceIds.includes(s.id)

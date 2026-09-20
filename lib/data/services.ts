@@ -9,15 +9,18 @@ import { Service, VehicleType } from "@/types";
 export const services: Service[] = [
   // ---------------------------------------------------------------- PROTEÇÃO
   {
-    id: "revestimento-ceramico",
+    id: "revestimento-1-ano",
     category: "protecao",
     vehicleTypes: ["car"],
-    name: "Revestimento Cerâmico",
-    shortDescription: "Proteção de 1 a 4 anos com brilho molhado e duradouro.",
+    name: "Revestimento Cerâmico — 1 ano",
+    shortDescription: "Proteção de 1 ano com brilho molhado e duradouro.",
     description:
-      "Camada cerâmica de alta resistência que protege a pintura contra sujeira, raios UV e desgaste, com brilho molhado por anos.",
+      "Camada cerâmica de alta resistência que protege a pintura contra sujeira, raios UV e desgaste, com brilho molhado por 1 ano.",
+    image: "/images/services/revestimento-ceramico.jpg",
     pricingType: "vehicle_category",
     vehicleDimension: "size",
+    prices: { small: 1500, medium: 1700, large: 1900 },
+    gift: ["Descontaminação dos vidros"],
     featured: true,
     benefits: [
       "Veículo com capacidade de sujar até 70% menos",
@@ -39,24 +42,45 @@ export const services: Service[] = [
       "Revitalização da caixa de roda",
     ],
     note: "Todos os pacotes incluem lavagem técnica premium interna e polimento técnico.",
-    variants: [
-      {
-        id: "1-ano",
-        label: "Proteção de 1 ano",
-        prices: { small: 1500, medium: 1700, large: 1900 },
-        gift: ["Descontaminação dos vidros"],
-      },
-      {
-        id: "3-anos",
-        label: "Proteção de 3 anos",
-        prices: { small: 2500, medium: 2700, large: 3000 },
-        gift: [
-          "Descontaminação dos vidros",
-          "Proteção",
-          "Proteção nas rodas e caixas de roda",
-        ],
-      },
+  },
+  {
+    id: "revestimento-3-anos",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    name: "Revestimento Cerâmico — 3 anos",
+    shortDescription: "Proteção de 3 anos com brilho molhado e duradouro.",
+    description:
+      "Camada cerâmica de alta resistência que protege a pintura contra sujeira, raios UV e desgaste, com brilho molhado por 3 anos.",
+    image: "/images/services/revestimento-ceramico.jpg",
+    pricingType: "vehicle_category",
+    vehicleDimension: "size",
+    prices: { small: 2500, medium: 2700, large: 3000 },
+    gift: [
+      "Descontaminação dos vidros",
+      "Proteção",
+      "Proteção nas rodas e caixas de roda",
     ],
+    featured: true,
+    benefits: [
+      "Veículo com capacidade de sujar até 70% menos",
+      "Diminui o desgaste do verniz pela exposição ao sol e chuva",
+      "Facilidade em limpar",
+      "Brilho molhado",
+      "Brilho duradouro",
+      "Proteção UV",
+      "3 a 5x mais resistência que o próprio verniz",
+    ],
+    includes: [
+      "Limpeza detalhada interna",
+      "Descontaminação",
+      "Preparação da pintura",
+      "Polimento técnico",
+      "Revitalização de plásticos",
+      "Revitalização de borrachas",
+      "Revitalização de pneus",
+      "Revitalização da caixa de roda",
+    ],
+    note: "Todos os pacotes incluem lavagem técnica premium interna e polimento técnico.",
   },
   {
     id: "ppf-moto",
@@ -331,6 +355,13 @@ export const limpezaTierServiceIds = [
   "limpeza-manutencao",
   "limpeza-tecnica",
   "limpeza-premium",
+];
+
+/** As 2 opções de Revestimento Cerâmico (carro) — agrupadas sob um único
+ * item "Revestimento Cerâmico" no fluxo de orçamento, igual à Limpeza. */
+export const revestimentoTierServiceIds = [
+  "revestimento-1-ano",
+  "revestimento-3-anos",
 ];
 
 /** Undercar — só fica disponível como adicional dentro da escolha de
