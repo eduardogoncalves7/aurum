@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getServiceById, higienizacaoServiceIds, isServiceAvailableForVehicleType, limpezaAddonServiceIds, limpezaTierServiceIds, revestimentoTierServiceIds, services } from "@/lib/data/services";
+import { getServiceById, higienizacaoServiceIds, isServiceAvailableForVehicleType, limpezaAddonServiceIds, limpezaTierServiceIds, catalogOnlyServiceIds, ppfCarroCompletoServiceIds, ppfCarroKitServiceIds, revestimentoTierServiceIds, services } from "@/lib/data/services";
 import { calculateQuoteTotal } from "@/lib/pricing";
 import { vehicleOptions, vehicleSummaryLabel } from "@/lib/vehicle";
 import { buildAppointmentWhatsAppMessage, buildCancelWhatsAppMessage, buildWhatsAppLink, buildWhatsAppMessage } from "@/lib/whatsapp";
@@ -32,6 +32,7 @@ import { DeliveryMethodSelector } from "@/components/booking-chat/DeliveryMethod
 import { LimpezaGroupCard } from "@/components/booking-chat/LimpezaGroupCard";
 import { HigienizacaoGroupCard } from "@/components/booking-chat/HigienizacaoGroupCard";
 import { RevestimentoGroupCard } from "@/components/booking-chat/RevestimentoGroupCard";
+import { PpfCarroGroupCard } from "@/components/booking-chat/PpfCarroGroupCard";
 import { WhatsAppRedirect } from "@/components/booking-chat/WhatsAppRedirect";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -158,6 +159,16 @@ export function BookingChat() {
       const isCurrentlySelected = prev.includes(tierId);
       const next = prev.filter((id) => !revestimentoTierServiceIds.includes(id));
       return isCurrentlySelected ? next : [...next, tierId];
+    });
+  }
+
+  /** Escolha de pacote completo de PPF é exclusiva (Frontal/Híbrida/Full se
+   * substituem); os kits avulsos continuam independentes. */
+  function selectPpfCompleto(completoId: string) {
+    setSelectedServiceIds((prev) => {
+      const isCurrentlySelected = prev.includes(completoId);
+      const next = prev.filter((id) => !ppfCarroCompletoServiceIds.includes(id));
+      return isCurrentlySelected ? next : [...next, completoId];
     });
   }
 
@@ -358,6 +369,14 @@ export function BookingChat() {
               />
             )}
             {vehicle?.type === "car" && (
+              <PpfCarroGroupCard
+                vehicle={vehicle}
+                selectedServiceIds={selectedServiceIds}
+                onToggleKit={toggleService}
+                onSelectCompleto={selectPpfCompleto}
+              />
+            )}
+            {vehicle?.type === "car" && (
               <LimpezaGroupCard
                 vehicle={vehicle}
                 selectedServiceIds={selectedServiceIds}
@@ -378,7 +397,10 @@ export function BookingChat() {
                   !revestimentoTierServiceIds.includes(s.id) &&
                   !limpezaTierServiceIds.includes(s.id) &&
                   !limpezaAddonServiceIds.includes(s.id) &&
-                  !higienizacaoServiceIds.includes(s.id)
+                  !higienizacaoServiceIds.includes(s.id) &&
+                  !ppfCarroKitServiceIds.includes(s.id) &&
+                  !ppfCarroCompletoServiceIds.includes(s.id) &&
+                  !catalogOnlyServiceIds.includes(s.id)
               )
               .map((s) => (
                 <ServiceListItem

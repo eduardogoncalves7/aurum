@@ -3,7 +3,8 @@ import { services } from "@/lib/data/services";
 import { ServiceCard } from "@/components/home/ServiceCard";
 
 export function ServiceCategories({ featuredOnly = false }: { featuredOnly?: boolean }) {
-  const list = featuredOnly ? services.filter((s) => s.featured) : services;
+  const visible = services.filter((s) => !s.hiddenFromCatalog);
+  const list = featuredOnly ? visible.filter((s) => s.featured) : visible;
 
   if (featuredOnly) {
     return (

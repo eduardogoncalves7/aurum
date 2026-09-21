@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { ServiceImage } from "@/components/home/ServiceImage";
 
 export function generateStaticParams() {
-  return services.map((s) => ({ slug: s.id }));
+  return services.filter((s) => !s.hiddenFromCatalog).map((s) => ({ slug: s.id }));
 }
 
 export default async function ServiceDetailPage({
@@ -24,6 +24,8 @@ export default async function ServiceDetailPage({
 
   const { value, isRange } = getServiceDisplayPrice(service);
   const isEstimateOnly = service.pricingType === "starting_at";
+  const isGroupedShowcase = !!(service.variants?.length || service.priceBreakdown?.length);
+  const ctaHref = isGroupedShowcase ? "/orcamento" : `/orcamento?service=${service.id}`;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
@@ -56,7 +58,7 @@ export default async function ServiceDetailPage({
             {formatCurrency(value)}
           </p>
         </div>
-        <Link href={`/orcamento?service=${service.id}`}>
+        <Link href={ctaHref}>
           <Button size="lg">Adicionar ao orçamento</Button>
         </Link>
       </div>
@@ -135,6 +137,33 @@ export default async function ServiceDetailPage({
         </section>
       )}
 
+      {/* Tabelas de preço "avulsas" (ex: kits e pacotes de PPF) */}
+      {service.priceBreakdown && (
+        <>
+          {service.priceBreakdown.map((group) => (
+            <section key={group.title} className="mt-10">
+              <h2 className="font-display text-lg font-bold text-foreground">
+                {group.title}
+              </h2>
+              <div className="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border">
+                {group.items.map((item) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between px-4 py-3 text-sm"
+                  >
+                    <span className="text-muted">{item.name}</span>
+                    <span className="font-semibold text-foreground">
+                      {item.isEstimate && "a partir de "}
+                      {formatCurrency(item.price)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+        </>
+      )}
+
       {service.benefits && (
         <section className="mt-10">
           <h2 className="font-display text-lg font-bold text-foreground">
@@ -186,7 +215,7 @@ export default async function ServiceDetailPage({
       )}
 
       <div className="mt-12 border-t border-border pt-8">
-        <Link href={`/orcamento?service=${service.id}`}>
+        <Link href={ctaHref}>
           <Button size="lg" className="w-full sm:w-auto">
             Adicionar ao orçamento
           </Button>

@@ -81,6 +81,18 @@ export interface Service {
   /** variantes do mesmo serviço, ex: proteção cerâmica 1/2/3/4 anos */
   variants?: ServiceVariant[];
   featured?: boolean;
+  /** Marca serviços que existem só pra composição interna (ex: uma opção
+   * de kit dentro de um card agrupado) — não aparecem soltos no catálogo
+   * público /servicos nem ganham página própria, só são usados dentro do
+   * fluxo de orçamento via um card de grupo dedicado. */
+  hiddenFromCatalog?: boolean;
+  /** Para um serviço "vitrine" que agrupa várias opções de preço fixo (ex:
+   * kits de PPF) sem depender de porte/carroceria de veículo — mostrado na
+   * página de detalhe como uma ou mais tabelas de preço. */
+  priceBreakdown?: {
+    title: string;
+    items: { name: string; price: number; isEstimate?: boolean }[];
+  }[];
 }
 
 export interface ServiceVariant {

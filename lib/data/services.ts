@@ -9,9 +9,64 @@ import { Service, VehicleType } from "@/types";
 export const services: Service[] = [
   // ---------------------------------------------------------------- PROTEÇÃO
   {
+    id: "revestimento-ceramico",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    name: "Revestimento Cerâmico",
+    shortDescription: "Proteção de 1 ou 3 anos com brilho molhado e duradouro.",
+    description:
+      "Camada cerâmica de alta resistência que protege a pintura contra sujeira, raios UV e desgaste, com brilho molhado por anos.",
+    image: "/images/services/revestimento-ceramico.jpg",
+    pricingType: "vehicle_category",
+    vehicleDimension: "size",
+    featured: true,
+    benefits: [
+      "Veículo com capacidade de sujar até 70% menos",
+      "Diminui o desgaste do verniz pela exposição ao sol e chuva",
+      "Facilidade em limpar",
+      "Brilho molhado",
+      "Brilho duradouro",
+      "Proteção UV",
+      "3 a 5x mais resistência que o próprio verniz",
+    ],
+    includes: [
+      "Limpeza detalhada interna",
+      "Descontaminação",
+      "Preparação da pintura",
+      "Polimento técnico",
+      "Revitalização de plásticos",
+      "Revitalização de borrachas",
+      "Revitalização de pneus",
+      "Revitalização da caixa de roda",
+    ],
+    note: "Todos os pacotes incluem lavagem técnica premium interna e polimento técnico.",
+    variants: [
+      {
+        id: "1-ano",
+        label: "Proteção de 1 ano",
+        prices: { small: 1500, medium: 1700, large: 1900 },
+        gift: ["Descontaminação dos vidros"],
+      },
+      {
+        id: "3-anos",
+        label: "Proteção de 3 anos",
+        prices: { small: 2500, medium: 2700, large: 3000 },
+        gift: [
+          "Descontaminação dos vidros",
+          "Proteção",
+          "Proteção nas rodas e caixas de roda",
+        ],
+      },
+    ],
+  },
+  // As duas opções abaixo são as mesmas do card "vitrine" acima, só que
+  // como serviços reais e independentes — usadas apenas dentro do fluxo de
+  // orçamento (RevestimentoGroupCard), nunca soltas no catálogo público.
+  {
     id: "revestimento-1-ano",
     category: "protecao",
     vehicleTypes: ["car"],
+    hiddenFromCatalog: true,
     name: "Revestimento Cerâmico — 1 ano",
     shortDescription: "Proteção de 1 ano com brilho molhado e duradouro.",
     description:
@@ -21,7 +76,6 @@ export const services: Service[] = [
     vehicleDimension: "size",
     prices: { small: 1500, medium: 1700, large: 1900 },
     gift: ["Descontaminação dos vidros"],
-    featured: true,
     benefits: [
       "Veículo com capacidade de sujar até 70% menos",
       "Diminui o desgaste do verniz pela exposição ao sol e chuva",
@@ -47,6 +101,7 @@ export const services: Service[] = [
     id: "revestimento-3-anos",
     category: "protecao",
     vehicleTypes: ["car"],
+    hiddenFromCatalog: true,
     name: "Revestimento Cerâmico — 3 anos",
     shortDescription: "Proteção de 3 anos com brilho molhado e duradouro.",
     description:
@@ -60,7 +115,6 @@ export const services: Service[] = [
       "Proteção",
       "Proteção nas rodas e caixas de roda",
     ],
-    featured: true,
     benefits: [
       "Veículo com capacidade de sujar até 70% menos",
       "Diminui o desgaste do verniz pela exposição ao sol e chuva",
@@ -104,10 +158,147 @@ export const services: Service[] = [
     shortDescription: "Película de proteção contra riscos e impactos, credenciado ALTA.",
     description:
       "Película transparente de alta resistência aplicada sobre a pintura do veículo para protegê-la contra riscos, impactos de pedras, arranhões leves, manchas e ação do tempo, preservando o brilho e a aparência original por muito mais tempo. Serviço credenciado ALTA.",
+    image: "/images/services/ppf-carro.jpg",
     pricingType: "starting_at",
     vehicleDimension: "none",
-    startingPrice: 2390,
+    startingPrice: 4390,
     benefits: ["Proteção por até 10 anos"],
+    note: "Consulte condições.",
+    priceBreakdown: [
+      {
+        title: "Kits",
+        items: [
+          { name: "Para-choque", price: 1490 },
+          { name: "Capô", price: 1390 },
+          { name: "Colunas em Black Piano", price: 600 },
+          { name: "Farol", price: 550 },
+          { name: "Quinas e conchas de maçaneta", price: 500 },
+          { name: "Soleiras de portas", price: 500 },
+        ],
+      },
+      {
+        title: "PPF Completos",
+        items: [
+          { name: "PPF Full", price: 14990, isEstimate: true },
+          { name: "Proteção Híbrida", price: 5990, isEstimate: true },
+          { name: "Frontal", price: 4390, isEstimate: true },
+        ],
+      },
+    ],
+  },
+  // As opções abaixo são as mesmas do card "vitrine" acima, só que como
+  // serviços reais e independentes — usadas apenas dentro do fluxo de
+  // orçamento (PpfCarroGroupCard), nunca soltas no catálogo público.
+  {
+    id: "ppf-carro-parachoque",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    hiddenFromCatalog: true,
+    name: "PPF — Para-choque",
+    shortDescription: "Kit de PPF para o para-choque dianteiro.",
+    image: "/images/services/ppf-carro.jpg",
+    pricingType: "fixed",
+    vehicleDimension: "none",
+    fixedPrice: 1490,
+  },
+  {
+    id: "ppf-carro-capo",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    hiddenFromCatalog: true,
+    name: "PPF — Capô",
+    shortDescription: "Kit de PPF para o capô.",
+    image: "/images/services/ppf-carro.jpg",
+    pricingType: "fixed",
+    vehicleDimension: "none",
+    fixedPrice: 1390,
+  },
+  {
+    id: "ppf-carro-colunas",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    hiddenFromCatalog: true,
+    name: "PPF — Colunas em Black Piano",
+    shortDescription: "Kit de PPF para as colunas em black piano.",
+    image: "/images/services/ppf-carro.jpg",
+    pricingType: "fixed",
+    vehicleDimension: "none",
+    fixedPrice: 600,
+  },
+  {
+    id: "ppf-carro-farol",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    hiddenFromCatalog: true,
+    name: "PPF — Farol",
+    shortDescription: "Kit de PPF para os faróis.",
+    image: "/images/services/ppf-carro.jpg",
+    pricingType: "fixed",
+    vehicleDimension: "none",
+    fixedPrice: 550,
+  },
+  {
+    id: "ppf-carro-macanetas",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    hiddenFromCatalog: true,
+    name: "PPF — Quinas e Conchas de Maçaneta",
+    shortDescription: "Kit de PPF para quinas e conchas de maçaneta.",
+    image: "/images/services/ppf-carro.jpg",
+    pricingType: "fixed",
+    vehicleDimension: "none",
+    fixedPrice: 500,
+  },
+  {
+    id: "ppf-carro-soleiras",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    hiddenFromCatalog: true,
+    name: "PPF — Soleiras de Portas",
+    shortDescription: "Kit de PPF para soleiras de portas.",
+    image: "/images/services/ppf-carro.jpg",
+    pricingType: "fixed",
+    vehicleDimension: "none",
+    fixedPrice: 500,
+  },
+  {
+    id: "ppf-carro-full",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    hiddenFromCatalog: true,
+    name: "PPF Full",
+    shortDescription:
+      "Capô, parachoque dianteiro e traseiro, para-lamas, laterais, tampa, porta-malas, teto, colunas, retrovisores e farol.",
+    image: "/images/services/ppf-carro.jpg",
+    pricingType: "starting_at",
+    vehicleDimension: "none",
+    startingPrice: 14990,
+    note: "Consulte condições.",
+  },
+  {
+    id: "ppf-carro-hibrida",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    hiddenFromCatalog: true,
+    name: "Proteção Híbrida",
+    shortDescription: "Kit frontal + vitrificação no restante do veículo.",
+    image: "/images/services/ppf-carro.jpg",
+    pricingType: "starting_at",
+    vehicleDimension: "none",
+    startingPrice: 5990,
+    note: "Consulte condições.",
+  },
+  {
+    id: "ppf-carro-frontal",
+    category: "protecao",
+    vehicleTypes: ["car"],
+    hiddenFromCatalog: true,
+    name: "PPF Frontal",
+    shortDescription: "Capô, parachoque dianteiro, para-lamas dianteiros e par de faróis.",
+    image: "/images/services/ppf-carro.jpg",
+    pricingType: "starting_at",
+    vehicleDimension: "none",
+    startingPrice: 4390,
     note: "Consulte condições.",
   },
 
@@ -379,6 +570,31 @@ export const higienizacaoServiceIds = [
   "higienizacao-bancos",
   "higienizacao-completa",
 ];
+
+/** Kits avulsos de PPF em Carro — multi-seleção dentro do card "PPF em
+ * Carro", em ordem decrescente de valor. */
+export const ppfCarroKitServiceIds = [
+  "ppf-carro-parachoque",
+  "ppf-carro-capo",
+  "ppf-carro-colunas",
+  "ppf-carro-farol",
+  "ppf-carro-macanetas",
+  "ppf-carro-soleiras",
+];
+
+/** Pacotes completos de PPF em Carro — seleção única (são níveis que se
+ * substituem), em ordem decrescente de valor. */
+export const ppfCarroCompletoServiceIds = [
+  "ppf-carro-full",
+  "ppf-carro-hibrida",
+  "ppf-carro-frontal",
+];
+
+/** Serviços "vitrine": existem só pra exibição no catálogo público (têm
+ * `variants` ou `priceBreakdown` em vez de preço direto) — nunca aparecem
+ * como item selecionável solto no fluxo de orçamento; lá quem entra são os
+ * serviços reais listados nos grupos acima. */
+export const catalogOnlyServiceIds = ["revestimento-ceramico", "ppf-carro"];
 
 /** Um serviço sem `vehicleTypes` vale para qualquer veículo; os demais só
  * aparecem para o(s) tipo(s) declarado(s). */
