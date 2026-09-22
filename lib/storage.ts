@@ -26,10 +26,10 @@ export interface AurumConfig {
 }
 
 const defaultConfig: AurumConfig = {
-  whatsappDestination: "553171369282",
+  whatsappDestination: "553186506463",
   address: "Rua Itaparica, 1494, Giovanini, Coronel Fabriciano - MG, 35170-101",
   instagram: "@aurumdetailing",
-  phone: "(31) 7136-9282",
+  phone: "(31) 8650-6463",
   hours: "Seg a Sáb, 08h às 18h",
 };
 
