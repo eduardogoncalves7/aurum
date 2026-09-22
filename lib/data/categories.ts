@@ -31,6 +31,12 @@ export const serviceCategories: ServiceCategoryInfo[] = [
     label: "Serviços Especiais",
     description: "Undercar e motor, com avaliação de valor sob demanda.",
   },
+  {
+    id: "cristalizacao",
+    label: "Cristalização de Vidros",
+    description:
+      "Remove marcas de contaminação e chuva ácida, melhora a visibilidade em dias de chuva e facilita o desprendimento de sujidades.",
+  },
 ];
 
 export function getCategoryLabel(id: string): string {

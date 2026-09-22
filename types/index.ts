@@ -108,7 +108,8 @@ export type ServiceCategoryId =
   | "polimento"
   | "higienizacao"
   | "limpeza_moto"
-  | "especiais";
+  | "especiais"
+  | "cristalizacao";
 
 export interface ServiceCategoryInfo {
   id: ServiceCategoryId;

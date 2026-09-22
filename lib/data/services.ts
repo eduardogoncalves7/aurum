@@ -525,6 +525,27 @@ export const services: Service[] = [
     gift: ["Limpeza externa"],
     featured: true,
   },
+
+  // --------------------------------------------------------- CRISTALIZAÇÃO
+  {
+    id: "cristalizacao-vidros",
+    category: "cristalizacao",
+    vehicleTypes: ["car"],
+    name: "Cristalização de Vidros",
+    shortDescription:
+      "Remove marcas de contaminação e chuva ácida, com mais visibilidade na chuva.",
+    description:
+      "Tratamento que remove marcas de contaminação e chuva ácida dos vidros, melhora a visibilidade em dias de chuva e facilita o desprendimento de sujidades.",
+    image: "/images/services/cristalizacao-vidros.jpg",
+    pricingType: "fixed",
+    vehicleDimension: "none",
+    fixedPrice: 250,
+    benefits: [
+      "Remove marcas de contaminação e chuva ácida",
+      "Auxilia na visibilidade em dias de chuva",
+      "Facilita o desprendimento de sujidades",
+    ],
+  },
 ];
 
 export function getServiceById(id: string): Service | undefined {
