@@ -2,6 +2,11 @@ import { ServiceCategoryInfo } from "@/types";
 
 export const serviceCategories: ServiceCategoryInfo[] = [
   {
+    id: "combos",
+    label: "Combos",
+    description: "Pacotes fechados combinando vários serviços com um preço único.",
+  },
+  {
     id: "protecao",
     label: "Proteções",
     description: "Revestimento cerâmico e PPF para blindar o brilho por anos.",

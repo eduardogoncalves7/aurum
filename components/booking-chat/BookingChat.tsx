@@ -6,19 +6,9 @@ import { getServiceById, higienizacaoServiceIds, isServiceAvailableForVehicleTyp
 import { calculateQuoteTotal } from "@/lib/pricing";
 import { vehicleOptions, vehicleSummaryLabel } from "@/lib/vehicle";
 import { buildAppointmentWhatsAppMessage, buildCancelWhatsAppMessage, buildWhatsAppLink, buildWhatsAppMessage } from "@/lib/whatsapp";
-import {
-  clearSession,
-  getAppointments,
-  getConfig,
-  getSession,
-  saveAppointment,
-  saveQuote,
-  saveVehicle,
-  setSession,
-  updateQuoteStatus,
-  upsertCustomer,
-} from "@/lib/storage";
-import { Quote, Vehicle, VehicleChatChoice, DeliveryMethod } from "@/types";
+import { clearSession, getSession, setSession } from "@/lib/storage";
+import { getPublicConfig } from "@/lib/config";
+import { Vehicle, VehicleChatChoice, DeliveryMethod, Service } from "@/types";
 import { formatCurrency, formatDatePtBr, isValidPhone, maskPhone } from "@/lib/formatters";
 
 import { ChatMessage, UserAnswerBubble } from "@/components/booking-chat/ChatMessage";
@@ -65,7 +55,6 @@ export function BookingChat() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const preselectedServiceId = searchParams.get("service");
-  const preselected = preselectedServiceId ? getServiceById(preselectedServiceId) : undefined;
 
   const [step, setStep] = useState<Step>("name");
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -75,13 +64,37 @@ export function BookingChat() {
   const [vehicleChoice, setVehicleChoice] = useState<{
     id: VehicleChatChoice | "moto";
   } | null>(null);
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
-    preselected ? [preselected.id] : []
-  );
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(() => {
+    const staticPreselected = preselectedServiceId ? getServiceById(preselectedServiceId) : undefined;
+    return staticPreselected ? [staticPreselected.id] : [];
+  });
   const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod | null>(null);
-  const [quote, setQuote] = useState<Quote | null>(null);
+  const [bookedSlotsForDate, setBookedSlotsForDate] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dbServices, setDbServices] = useState<Service[]>([]);
+
+  const config = useMemo(() => getPublicConfig(), []);
+
+  // Itens de catálogo criados no /admin (serviços novos + promoções em
+  // vigor) — somam ao catálogo estático em todo o fluxo abaixo.
+  useEffect(() => {
+    fetch("/api/catalog-items")
+      .then((res) => (res.ok ? res.json() : { services: [] }))
+      .then((data) => setDbServices(data.services ?? []))
+      .catch(() => setDbServices([]));
+  }, []);
+
+  // Se o link veio com ?service=<id> de um item que só existe no banco (não
+  // no catálogo estático), ele só é resolvido depois que dbServices chega —
+  // pré-seleciona nesse momento, mas só se nada mais já foi escolhido.
+  useEffect(() => {
+    if (!preselectedServiceId || selectedServiceIds.length > 0) return;
+    const found = getServiceById(preselectedServiceId, dbServices);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- só roda quando dbServices chega da API; não há como "assinar" isso de outra forma
+    if (found) setSelectedServiceIds([found.id]);
+  }, [dbServices, preselectedServiceId, selectedServiceIds.length]);
 
   // Reconhece o cliente que já "logou" antes (nome + telefone salvos no
   // navegador) e pula direto pra escolha de veículo.
@@ -97,6 +110,29 @@ export function BookingChat() {
     setSessionChecked(true);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
+
+  // Consulta horários já ocupados naquela data assim que ela é escolhida
+  // (antes era um filtro síncrono em localStorage; agora é uma chamada à
+  // API, então roda num efeito e alimenta o TimeSelector via estado).
+  useEffect(() => {
+    if (!date) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- limpa o estado quando a data é desmarcada (voltar no fluxo); não há como "assinar" isso de outra forma
+      setBookedSlotsForDate([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/agendamentos?data=${encodeURIComponent(date)}`)
+      .then((res) => (res.ok ? res.json() : { horariosOcupados: [] }))
+      .then((data) => {
+        if (!cancelled) setBookedSlotsForDate(data.horariosOcupados ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setBookedSlotsForDate([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [date]);
 
   function handleSwitchAccount() {
     clearSession();
@@ -120,13 +156,12 @@ export function BookingChat() {
     };
   }, [vehicleChoice]);
 
-  const availableServices = useMemo(
-    () =>
-      vehicle
-        ? services.filter((s) => isServiceAvailableForVehicleType(s, vehicle.type))
-        : services,
-    [vehicle]
-  );
+  const availableServices = useMemo(() => {
+    const combined = [...services, ...dbServices];
+    return vehicle
+      ? combined.filter((s) => isServiceAvailableForVehicleType(s, vehicle.type))
+      : combined;
+  }, [vehicle, dbServices]);
 
   function toggleService(serviceId: string) {
     setSelectedServiceIds((prev) =>
@@ -178,8 +213,8 @@ export function BookingChat() {
   );
 
   const { lineItems, total } = useMemo(
-    () => calculateQuoteTotal(selections, vehicle),
-    [selections, vehicle]
+    () => calculateQuoteTotal(selections, vehicle, dbServices),
+    [selections, vehicle, dbServices]
   );
 
   function goTo(next: Step) {
@@ -192,7 +227,6 @@ export function BookingChat() {
   }
 
   function handleSendWhatsApp() {
-    const config = getConfig();
     const message = buildWhatsAppMessage({
       name,
       phone,
@@ -204,47 +238,48 @@ export function BookingChat() {
     window.open(link, "_blank", "noopener,noreferrer");
   }
 
-  function persistQuote(): Quote {
-    const customer = upsertCustomer(name, phone);
-    const savedVehicle = saveVehicle({
-      customerId: customer.id,
-      type: vehicle?.type ?? "car",
-      chatChoice: vehicle?.chatChoice,
-    });
-    const created = saveQuote({
-      customerId: customer.id,
-      vehicleId: savedVehicle.id,
-      serviceIds: selectedServiceIds,
-      lineItems,
-      estimatedTotal: total,
-      status: "draft",
-    });
-    setQuote(created);
-    return created;
+  /** Salva o agendamento no banco (nome, telefone, veículo, serviços
+   * cotados, data/horário) e só então mostra a tela de confirmação. Se a
+   * gravação falhar, o cliente não pode ficar travado — ele sempre termina
+   * no WhatsApp de qualquer forma, então seguimos pra confirmação mesmo
+   * assim e só registramos o erro no console do navegador. */
+  async function handleConfirmBooking() {
+    if (!date || !time || !deliveryMethod || !vehicle) return;
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/agendamentos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: name,
+          telefone: phone,
+          veiculoTipo: vehicle.type,
+          veiculoDetalhe: vehicle.type === "car" ? vehicleChoice?.id ?? null : null,
+          servicos: lineItems.map((item) => ({
+            id: item.serviceId,
+            nome: item.name,
+            preco: item.price,
+          })),
+          valorEstimado: total,
+          data: date,
+          horario: time,
+          formaEntrega: deliveryMethod,
+        }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        console.error("Falha ao salvar agendamento:", body?.error ?? response.status);
+      }
+    } catch (error) {
+      console.error("Falha ao salvar agendamento:", error);
+    } finally {
+      setIsSubmitting(false);
+      setStep("confirmation");
+    }
   }
-
-  function handleConfirmBooking() {
-    if (!date || !time || !deliveryMethod) return;
-    const currentQuote = quote ?? persistQuote();
-    saveAppointment({
-      quoteId: currentQuote.id,
-      date,
-      time,
-      status: "pending",
-      deliveryMethod,
-    });
-    updateQuoteStatus(currentQuote.id, "scheduled");
-    setStep("confirmation");
-  }
-
-  const bookedSlotsForDate = date
-    ? getAppointments()
-        .filter((a) => a.date === date)
-        .map((a) => a.time)
-    : [];
 
   const selectedServiceNames = selectedServiceIds
-    .map((id) => getServiceById(id)?.name)
+    .map((id) => getServiceById(id, dbServices)?.name)
     .filter((n): n is string => !!n);
 
   if (!sessionChecked) return null;
@@ -339,7 +374,7 @@ export function BookingChat() {
               if (vehicle) {
                 setSelectedServiceIds((prev) =>
                   prev.filter((id) => {
-                    const svc = getServiceById(id);
+                    const svc = getServiceById(id, dbServices);
                     return svc && isServiceAvailableForVehicleType(svc, vehicle.type);
                   })
                 );
@@ -438,7 +473,7 @@ export function BookingChat() {
             vehicle={vehicle}
             lineItems={lineItems}
             total={total}
-            whatsappDestination={getConfig().whatsappDestination}
+            whatsappDestination={config.whatsappDestination}
             onSendWhatsApp={handleSendWhatsApp}
           />
           <Button size="lg" onClick={() => goTo("date")}>
@@ -475,10 +510,14 @@ export function BookingChat() {
           <DeliveryMethodSelector
             value={deliveryMethod}
             onChange={setDeliveryMethod}
-            address={getConfig().address}
+            address={config.address}
           />
-          <Button size="lg" disabled={!deliveryMethod} onClick={handleConfirmBooking}>
-            Confirmar agendamento
+          <Button
+            size="lg"
+            disabled={!deliveryMethod || isSubmitting}
+            onClick={handleConfirmBooking}
+          >
+            {isSubmitting ? "Confirmando..." : "Confirmar agendamento"}
           </Button>
         </StepContainer>
       )}
@@ -521,7 +560,7 @@ export function BookingChat() {
 
           <WhatsAppRedirect
             whatsappLink={buildWhatsAppLink(
-              getConfig().whatsappDestination,
+              config.whatsappDestination,
               buildAppointmentWhatsAppMessage({
                 name,
                 phone,
@@ -531,7 +570,7 @@ export function BookingChat() {
                 dateLabel: formatDatePtBr(date),
                 time,
                 deliveryMethod,
-                address: getConfig().address,
+                address: config.address,
               })
             )}
           />
@@ -546,7 +585,7 @@ export function BookingChat() {
 
           <a
             href={buildWhatsAppLink(
-              getConfig().whatsappDestination,
+              config.whatsappDestination,
               buildCancelWhatsAppMessage({
                 serviceNames: selectedServiceNames,
                 dateLabel: formatDatePtBr(date),

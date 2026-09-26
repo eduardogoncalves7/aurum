@@ -1,48 +1,57 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Customer, Quote, Vehicle } from "@/types";
-import { getCustomers, getQuotes, getVehicles } from "@/lib/storage";
-import { vehicleSummaryLabel } from "@/lib/vehicle";
+import { Agendamento, AgendamentoStatus } from "@/lib/agendamentos";
+import { vehicleLabelFromAgendamento } from "@/lib/vehicle";
 import { formatCurrency, formatDatePtBr } from "@/lib/formatters";
 import { Badge } from "@/components/ui/Badge";
 
-const statusLabel: Record<Quote["status"], string> = {
-  draft: "Rascunho",
-  sent: "Enviado",
-  scheduled: "Agendado",
+const statusLabel: Record<AgendamentoStatus, string> = {
+  pending: "Pendente",
+  confirmed: "Confirmado",
   completed: "Concluído",
   cancelled: "Cancelado",
 };
 
-const statusTone: Record<Quote["status"], "neutral" | "gold" | "success" | "warning"> = {
-  draft: "neutral",
-  sent: "gold",
-  scheduled: "warning",
+const statusTone: Record<AgendamentoStatus, "neutral" | "gold" | "success" | "warning"> = {
+  pending: "warning",
+  confirmed: "gold",
   completed: "success",
   cancelled: "neutral",
 };
 
-export default function AdminQuotesPage() {
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+export default function AdminAgendamentosPage() {
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- lê localStorage; precisa rodar após a hidratação para não gerar mismatch SSR/cliente
-    setQuotes(getQuotes().sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
-    setCustomers(getCustomers());
-    setVehicles(getVehicles());
+    fetch("/api/admin/agendamentos")
+      .then((res) => {
+        if (!res.ok) throw new Error("Falha ao carregar");
+        return res.json();
+      })
+      .then((data: { agendamentos: Agendamento[] }) => {
+        setAgendamentos(
+          [...(data.agendamentos ?? [])].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm))
+        );
+      })
+      .catch(() => setLoadError(true));
   }, []);
 
   return (
     <div className="p-6 sm:p-8">
       <h1 className="font-display text-2xl font-extrabold text-foreground">
-        Orçamentos
+        Agendamentos
       </h1>
       <p className="mt-1 text-sm text-muted">
-        Todos os orçamentos montados pelo site, do rascunho ao agendamento.
+        Todos os agendamentos confirmados pelo site.
       </p>
+
+      {loadError && (
+        <p className="mt-6 text-sm text-red-400">
+          Não foi possível carregar os agendamentos agora.
+        </p>
+      )}
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border">
         <table className="w-full min-w-[720px] text-sm">
@@ -57,42 +66,41 @@ export default function AdminQuotesPage() {
             </tr>
           </thead>
           <tbody>
-            {quotes.length === 0 && (
+            {agendamentos.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-muted-dark">
-                  Nenhum orçamento ainda.
+                  Nenhum agendamento ainda.
                 </td>
               </tr>
             )}
-            {quotes.map((quote) => {
-              const customer = customers.find((c) => c.id === quote.customerId);
-              const vehicle = vehicles.find((v) => v.id === quote.vehicleId);
-              return (
-                <tr key={quote.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium text-foreground">
-                    {customer?.name ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-muted">
-                    {vehicleSummaryLabel(vehicle ?? null)}
-                  </td>
-                  <td className="px-4 py-3 text-muted">
-                    {quote.lineItems.length}{" "}
-                    {quote.lineItems.length === 1 ? "serviço" : "serviços"}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-gold-light">
-                    {formatCurrency(quote.estimatedTotal)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge tone={statusTone[quote.status]}>
-                      {statusLabel[quote.status]}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-muted">
-                    {formatDatePtBr(quote.createdAt.slice(0, 10))}
-                  </td>
-                </tr>
-              );
-            })}
+            {agendamentos.map((agendamento) => (
+              <tr key={agendamento.id} className="border-b border-border last:border-0">
+                <td className="px-4 py-3 font-medium text-foreground">
+                  {agendamento.nome}
+                  <span className="block text-xs font-normal text-muted-dark">
+                    {agendamento.telefone}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-muted">
+                  {vehicleLabelFromAgendamento(agendamento.veiculoTipo, agendamento.veiculoDetalhe)}
+                </td>
+                <td className="px-4 py-3 text-muted">
+                  {agendamento.servicos.length}{" "}
+                  {agendamento.servicos.length === 1 ? "serviço" : "serviços"}
+                </td>
+                <td className="px-4 py-3 font-medium text-gold-light">
+                  {formatCurrency(agendamento.valorEstimado)}
+                </td>
+                <td className="px-4 py-3">
+                  <Badge tone={statusTone[agendamento.status]}>
+                    {statusLabel[agendamento.status]}
+                  </Badge>
+                </td>
+                <td className="px-4 py-3 text-muted">
+                  {formatDatePtBr(agendamento.data)} · {agendamento.horario}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

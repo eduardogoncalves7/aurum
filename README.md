@@ -1,4 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Aurum Detailing
+
+Site de catálogo/orçamento com fluxo em chat que termina redirecionando o
+cliente para o WhatsApp da loja. O banco de dados guarda **apenas
+agendamentos** (nome, telefone, veículo, serviços cotados, data/horário) —
+não há cadastro de cliente, catálogo ou configuração persistidos no banco.
+
+### Banco de dados
+
+Postgres puro (cliente `pg`, sem ORM), com uma única tabela `agendamentos`
+(ver `db/migrations/`). Qualquer Postgres serve — um serviço no mesmo
+projeto do Coolify, ou um banco Supabase, por exemplo — basta apontar
+`DATABASE_URL`.
+
+Rodar as migrações manualmente (o Dockerfile já faz isso automaticamente no
+start do container):
+
+```bash
+DATABASE_URL=postgres://... npm run db:migrate
+```
+
+### Variáveis de ambiente
+
+Copie `.env.example` para `.env.local` (dev) e configure as mesmas
+variáveis no deploy. Detalhes de cada uma estão comentados no arquivo.
+Importante: as variáveis `NEXT_PUBLIC_*` precisam estar presentes já no
+`docker build` (não só em runtime), pois vão para o bundle do cliente —
+passe-as como `--build-arg` ou como "Build variables" no Coolify.
+
+### Painel /admin
+
+Protegido por HTTP Basic Auth (`proxy.ts`), usando `ADMIN_USER` e
+`ADMIN_PASSWORD`. Sem essas variáveis definidas, o painel fica bloqueado por
+padrão. Serviços e promoções criados por lá somam ao catálogo estático
+(`lib/data/services.ts`), nunca o substituem.
+
+### Fotos de serviços/promoções (volume persistente)
+
+As fotos enviadas pelo `/admin` são salvas em `public/uploads` dentro do
+container. **No Coolify, monte um volume persistente exatamente nesse
+caminho** (`/app/public/uploads`, já que o Dockerfile copia tudo pra `/app`)
+— sem isso, toda foto enviada some no próximo deploy. Não há backup
+automático desse volume; se um dia migrar de servidor, copie essa pasta
+manualmente pro servidor novo.
+
+---
+
+
 
 ## Getting Started
 

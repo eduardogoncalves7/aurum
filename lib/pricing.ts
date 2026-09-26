@@ -91,14 +91,15 @@ export function getServiceDisplayPrice(service: Service): {
  */
 export function calculateQuoteTotal(
   selections: ServiceSelection[],
-  vehicle: Vehicle | null
+  vehicle: Vehicle | null,
+  extraServices: Service[] = []
 ): { lineItems: QuoteLineItem[]; total: number; requiresEvaluation: boolean } {
   const lineItems: QuoteLineItem[] = [];
   let total = 0;
   let requiresEvaluation = false;
 
   for (const selection of selections) {
-    const service = getServiceById(selection.serviceId);
+    const service = getServiceById(selection.serviceId, extraServices);
     if (!service) continue;
 
     const result = calculateServicePrice(service, vehicle, selection.variantId);

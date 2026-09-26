@@ -7,6 +7,53 @@ import { Service, VehicleType } from "@/types";
 // ---------------------------------------------------------------------------
 
 export const services: Service[] = [
+  // ------------------------------------------------------------------ COMBOS
+  // Pacotes fechados, só para carro. hatch/sedan é o preço-base; suv e
+  // pickup somam um valor fixo por cima (mesmo padrão de preço por
+  // carroceria usado no resto do catálogo).
+  {
+    id: "combo-carro-0km",
+    category: "combos",
+    vehicleTypes: ["car"],
+    name: "Pacote Carro 0Km",
+    shortDescription:
+      "Limpeza premium + vitrificação 9H + PPF em pontos de atrito + proteção completa.",
+    description:
+      "Pacote fechado pensado pra quem acabou de tirar o carro 0km da concessionária: limpeza premium, vitrificação 9H de pintura (proteção por até 3 anos), PPF nas quinas de porta e conchas de maçaneta, proteção nos vidros e vitrificação dos plásticos externos.",
+    image: "/images/services/combo-carro-0km.jpg",
+    pricingType: "vehicle_category",
+    vehicleDimension: "body",
+    prices: { hatch_sedan: 2700, suv: 2850, pickup: 3000 },
+    featured: true,
+    includes: [
+      "Limpeza premium",
+      "Vitrificação 9H de pintura (proteção por até 3 anos)",
+      "PPF na quina de porta e concha de maçaneta",
+      "Proteção nos vidros",
+      "Vitrificação dos plásticos externos",
+    ],
+  },
+  {
+    id: "combo-preparacao-venda",
+    category: "combos",
+    vehicleTypes: ["car"],
+    name: "Preparação para Venda",
+    shortDescription:
+      "Limpeza premium + higienização de bancos e forros + polimento comercial + limpeza do motor.",
+    description:
+      "Pacote fechado pra deixar o carro pronto pra anunciar e vender: limpeza premium, higienização dos bancos e forros de porta, polimento comercial e limpeza do motor.",
+    image: "/images/services/combo-preparacao-venda.jpg",
+    pricingType: "vehicle_category",
+    vehicleDimension: "body",
+    prices: { hatch_sedan: 1100, suv: 1250, pickup: 1400 },
+    featured: true,
+    includes: [
+      "Limpeza premium",
+      "Higienização dos bancos e forros de porta",
+      "Polimento comercial",
+      "Limpeza do motor",
+    ],
+  },
   // ---------------------------------------------------------------- PROTEÇÃO
   {
     id: "revestimento-ceramico",
@@ -548,8 +595,8 @@ export const services: Service[] = [
   },
 ];
 
-export function getServiceById(id: string): Service | undefined {
-  return services.find((s) => s.id === id);
+export function getServiceById(id: string, extra: Service[] = []): Service | undefined {
+  return services.find((s) => s.id === id) ?? extra.find((s) => s.id === id);
 }
 
 /** Convenção de arquivo: uma imagem por serviço em /public/images/services/,
