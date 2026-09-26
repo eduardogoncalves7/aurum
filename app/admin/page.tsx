@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { CalendarClock, FileText, TrendingUp, Users } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { formatCurrency } from "@/lib/formatters";
-import { Agendamento } from "@/lib/agendamentos";
+import { getAppointments, getCustomers, getQuotes } from "@/lib/storage";
 
 function isToday(iso: string) {
   const d = new Date(iso);
@@ -18,51 +18,44 @@ function isToday(iso: string) {
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<{
-    agendamentosHoje: number;
-    agendamentos: number;
-    clientes: number;
+    quotesToday: number;
+    appointments: number;
+    customers: number;
     averageTicket: number;
   } | null>(null);
-  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/agendamentos")
-      .then((res) => {
-        if (!res.ok) throw new Error("Falha ao carregar");
-        return res.json();
-      })
-      .then((data: { agendamentos: Agendamento[] }) => {
-        const agendamentos = data.agendamentos ?? [];
-        const agendamentosHoje = agendamentos.filter((a) => isToday(a.criadoEm)).length;
-        const clientesUnicos = new Set(agendamentos.map((a) => a.telefone)).size;
-        const averageTicket = agendamentos.length
-          ? agendamentos.reduce((sum, a) => sum + a.valorEstimado, 0) / agendamentos.length
-          : 0;
+    const quotes = getQuotes();
+    const customers = getCustomers();
+    const appointments = getAppointments();
+    const quotesToday = quotes.filter((q) => isToday(q.createdAt)).length;
+    const averageTicket = quotes.length
+      ? quotes.reduce((sum, q) => sum + q.estimatedTotal, 0) / quotes.length
+      : 0;
 
-        setStats({
-          agendamentosHoje,
-          agendamentos: agendamentos.length,
-          clientes: clientesUnicos,
-          averageTicket,
-        });
-      })
-      .catch(() => setLoadError(true));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lê localStorage; precisa rodar após a hidratação para não gerar mismatch SSR/cliente
+    setStats({
+      quotesToday,
+      appointments: appointments.length,
+      customers: customers.length,
+      averageTicket,
+    });
   }, []);
 
   const cards = [
     {
-      label: "Agendamentos hoje",
-      value: stats?.agendamentosHoje ?? 0,
+      label: "Orçamentos hoje",
+      value: stats?.quotesToday ?? 0,
       icon: FileText,
     },
     {
-      label: "Agendamentos (total)",
-      value: stats?.agendamentos ?? 0,
+      label: "Agendamentos",
+      value: stats?.appointments ?? 0,
       icon: CalendarClock,
     },
     {
-      label: "Clientes (telefones distintos)",
-      value: stats?.clientes ?? 0,
+      label: "Clientes",
+      value: stats?.customers ?? 0,
       icon: Users,
     },
     {
@@ -78,15 +71,8 @@ export default function AdminDashboardPage() {
         Dashboard
       </h1>
       <p className="mt-1 text-sm text-muted">
-        Visão geral dos agendamentos.
+        Visão geral dos orçamentos e clientes do protótipo.
       </p>
-
-      {loadError && (
-        <p className="mt-6 text-sm text-red-400">
-          Não foi possível carregar os dados agora. Tente novamente em
-          instantes.
-        </p>
-      )}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map(({ label, value, icon: Icon }) => (
@@ -99,6 +85,11 @@ export default function AdminDashboardPage() {
           </Card>
         ))}
       </div>
+
+      <p className="mt-8 text-xs text-muted-dark">
+        Dados armazenados localmente neste navegador (localStorage). Ao
+        integrar com Supabase, este painel passa a refletir o banco real.
+      </p>
     </div>
   );
 }

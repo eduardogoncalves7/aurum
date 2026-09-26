@@ -1,133 +1,230 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import type { CatalogItem } from "@/lib/catalog-items";
-import { services as staticServices } from "@/lib/data/services";
+import { ChevronDown, RotateCcw } from "lucide-react";
+import { services } from "@/lib/data/services";
 import { getCategoryLabel } from "@/lib/data/categories";
+import {
+  ServiceOverride,
+  clearServiceOverride,
+  getServiceOverrides,
+  saveServiceOverride,
+} from "@/lib/storage";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { CatalogItemForm } from "@/components/admin/CatalogItemForm";
-
-function isPromotion(item: CatalogItem) {
-  return !!(item.promocaoInicio && item.promocaoFim);
-}
+import { Input } from "@/components/ui/Input";
+import { cn } from "@/lib/utils";
 
 export default function AdminServicesPage() {
-  const [items, setItems] = useState<CatalogItem[]>([]);
-  const [loadError, setLoadError] = useState(false);
-  const [editing, setEditing] = useState<CatalogItem | "new" | null>(null);
+  const [overrides, setOverrides] = useState<Record<string, ServiceOverride>>({});
+  const [openId, setOpenId] = useState<string | null>(null);
 
-  function reload() {
-    fetch("/api/admin/catalog-items")
-      .then((res) => {
-        if (!res.ok) throw new Error("Falha ao carregar");
-        return res.json();
-      })
-      .then((data: { items: CatalogItem[] }) => setItems(data.items ?? []))
-      .catch(() => setLoadError(true));
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lê localStorage; precisa rodar após a hidratação para não gerar mismatch SSR/cliente
+    setOverrides(getServiceOverrides());
+  }, []);
+
+  function handleSave(serviceId: string, override: ServiceOverride) {
+    saveServiceOverride(serviceId, override);
+    setOverrides((prev) => ({ ...prev, [serviceId]: override }));
+    setOpenId(null);
   }
 
-  useEffect(reload, []);
-
-  const services = items.filter((i) => !isPromotion(i));
-
-  async function handleDelete(id: string) {
-    if (!confirm("Apagar este serviço? Não dá pra desfazer.")) return;
-    await fetch(`/api/admin/catalog-items/${id}`, { method: "DELETE" });
-    reload();
+  function handleReset(serviceId: string) {
+    clearServiceOverride(serviceId);
+    setOverrides((prev) => {
+      const copy = { ...prev };
+      delete copy[serviceId];
+      return copy;
+    });
   }
 
   return (
     <div className="p-6 sm:p-8">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Serviços</h1>
-          <p className="mt-1 max-w-xl text-sm text-muted">
-            Serviços criados aqui somam ao catálogo de fábrica (abaixo, só
-            leitura) — aparecem em /servicos e no orçamento automaticamente.
-          </p>
+      <h1 className="font-display text-2xl font-extrabold text-foreground">
+        Serviços
+      </h1>
+      <p className="mt-1 max-w-xl text-sm text-muted">
+        Edição visual do catálogo. As alterações ficam salvas neste navegador
+        e servem para validar o fluxo — ao integrar com Supabase, este painel
+        passa a gravar direto na tabela <code>services</code>.
+      </p>
+
+      <div className="mt-6 flex flex-col gap-2.5">
+        {services.map((service) => {
+          const override = overrides[service.id];
+          const isOpen = openId === service.id;
+          return (
+            <div
+              key={service.id}
+              className="rounded-xl border border-border bg-background-secondary"
+            >
+              <button
+                type="button"
+                onClick={() => setOpenId(isOpen ? null : service.id)}
+                className="flex w-full items-center gap-4 px-4 py-3.5 text-left"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-display font-bold text-foreground">
+                    {override?.name ?? service.name}
+                    {override && (
+                      <span className="ml-2 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold-light">
+                        editado
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-muted-dark">
+                    {getCategoryLabel(service.category)} · {service.pricingType}
+                  </p>
+                </div>
+                <ChevronDown
+                  size={18}
+                  className={cn("shrink-0 text-muted transition-transform", isOpen && "rotate-180")}
+                />
+              </button>
+
+              {isOpen && (
+                <ServiceEditForm
+                  serviceId={service.id}
+                  baseName={service.name}
+                  baseShortDescription={service.shortDescription}
+                  baseNote={service.note}
+                  pricingType={service.pricingType}
+                  basePrices={service.prices as Record<string, number> | undefined}
+                  baseFixedPrice={service.fixedPrice}
+                  baseStartingPrice={service.startingPrice}
+                  hasVariants={!!service.variants?.length}
+                  override={override}
+                  onSave={(o) => handleSave(service.id, o)}
+                  onReset={() => handleReset(service.id)}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ServiceEditForm({
+  serviceId,
+  baseName,
+  baseShortDescription,
+  baseNote,
+  pricingType,
+  basePrices,
+  baseFixedPrice,
+  baseStartingPrice,
+  hasVariants,
+  override,
+  onSave,
+  onReset,
+}: {
+  serviceId: string;
+  baseName: string;
+  baseShortDescription: string;
+  baseNote?: string;
+  pricingType: string;
+  basePrices?: Record<string, number>;
+  baseFixedPrice?: number;
+  baseStartingPrice?: number;
+  hasVariants: boolean;
+  override?: ServiceOverride;
+  onSave: (override: ServiceOverride) => void;
+  onReset: () => void;
+}) {
+  const [name, setName] = useState(override?.name ?? baseName);
+  const [shortDescription, setShortDescription] = useState(
+    override?.shortDescription ?? baseShortDescription
+  );
+  const [note, setNote] = useState(override?.note ?? baseNote ?? "");
+  const [fixedPrice, setFixedPrice] = useState(
+    override?.fixedPrice ?? baseFixedPrice ?? 0
+  );
+  const [startingPrice, setStartingPrice] = useState(
+    override?.startingPrice ?? baseStartingPrice ?? 0
+  );
+  const [prices, setPrices] = useState<Record<string, number>>(
+    override?.prices ?? basePrices ?? {}
+  );
+
+  return (
+    <div className="flex flex-col gap-4 border-t border-border p-4">
+      <Input label="Nome" value={name} onChange={(e) => setName(e.target.value)} />
+      <Input
+        label="Descrição curta"
+        value={shortDescription}
+        onChange={(e) => setShortDescription(e.target.value)}
+      />
+      <Input label="Observação" value={note} onChange={(e) => setNote(e.target.value)} />
+
+      {pricingType === "fixed" && (
+        <Input
+          label="Preço (R$)"
+          type="number"
+          value={fixedPrice}
+          onChange={(e) => setFixedPrice(Number(e.target.value))}
+        />
+      )}
+
+      {pricingType === "starting_at" && (
+        <Input
+          label='Preço "a partir de" (R$)'
+          type="number"
+          value={startingPrice}
+          onChange={(e) => setStartingPrice(Number(e.target.value))}
+        />
+      )}
+
+      {pricingType === "vehicle_category" && !hasVariants && basePrices && (
+        <div className="grid gap-3 sm:grid-cols-3">
+          {Object.keys(basePrices).map((category) => (
+            <Input
+              key={category}
+              label={category}
+              type="number"
+              value={prices[category] ?? 0}
+              onChange={(e) =>
+                setPrices((prev) => ({ ...prev, [category]: Number(e.target.value) }))
+              }
+            />
+          ))}
         </div>
-        {editing === null && (
-          <Button onClick={() => setEditing("new")}>
-            <Plus size={16} className="mr-1.5" /> Novo serviço
+      )}
+
+      {hasVariants && (
+        <p className="text-xs text-muted-dark">
+          Este serviço tem pacotes com preços por variante — edição de
+          variantes não está disponível neste protótipo visual.
+        </p>
+      )}
+
+      <div className="flex flex-wrap gap-3 pt-1">
+        <Button
+          size="sm"
+          onClick={() =>
+            onSave({
+              name,
+              shortDescription,
+              note: note || undefined,
+              fixedPrice: pricingType === "fixed" ? fixedPrice : undefined,
+              startingPrice: pricingType === "starting_at" ? startingPrice : undefined,
+              prices: pricingType === "vehicle_category" && !hasVariants ? prices : undefined,
+            })
+          }
+        >
+          Salvar
+        </Button>
+        {override && (
+          <Button size="sm" variant="ghost" onClick={onReset} className="gap-1.5">
+            <RotateCcw size={14} />
+            Restaurar padrão
           </Button>
         )}
       </div>
-
-      {editing !== null && (
-        <div className="mt-6">
-          <CatalogItemForm
-            variant="service"
-            initialItem={editing === "new" ? undefined : editing}
-            onCancel={() => setEditing(null)}
-            onSaved={() => {
-              setEditing(null);
-              reload();
-            }}
-          />
-        </div>
-      )}
-
-      {loadError && (
-        <p className="mt-6 text-sm text-red-400">Não foi possível carregar os serviços agora.</p>
-      )}
-
-      <div className="mt-6 flex flex-col gap-2">
-        {services.length === 0 && editing === null && (
-          <p className="text-sm text-muted-dark">Nenhum serviço criado por aqui ainda.</p>
-        )}
-        {services.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background-secondary px-4 py-3.5"
-          >
-            <div>
-              <p className="font-display font-bold text-foreground">{item.nome}</p>
-              <p className="mt-0.5 text-xs text-muted-dark">
-                {getCategoryLabel(item.categoria)}
-                {item.subcategoria ? ` · ${item.subcategoria}` : ""} ·{" "}
-                {item.veiculoTipo === "car" ? "Carro" : "Moto"}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {!item.ativo && <Badge tone="neutral">Inativo</Badge>}
-              <button
-                onClick={() => setEditing(item)}
-                className="rounded-lg border border-border p-2 text-muted hover:border-gold hover:text-gold-light"
-                aria-label="Editar"
-              >
-                <Pencil size={15} />
-              </button>
-              <button
-                onClick={() => handleDelete(item.id)}
-                className="rounded-lg border border-border p-2 text-muted hover:border-red-400 hover:text-red-400"
-                aria-label="Apagar"
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <h2 className="mt-10 font-display text-lg font-bold text-foreground">
-        Catálogo de fábrica (código, só leitura)
-      </h2>
-      <p className="mt-1 text-xs text-muted-dark">
-        Pra mudar isto aqui, edite lib/data/services.ts e faça um novo deploy.
+      <p className="text-[11px] text-muted-dark" data-service={serviceId}>
+        Alterações salvas localmente e refletidas apenas neste painel.
       </p>
-      <div className="mt-3 flex flex-col gap-2">
-        {staticServices.map((service) => (
-          <div
-            key={service.id}
-            className="rounded-xl border border-border bg-background-secondary/50 px-4 py-3"
-          >
-            <p className="font-medium text-foreground">{service.name}</p>
-            <p className="mt-0.5 text-xs text-muted-dark">{getCategoryLabel(service.category)}</p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

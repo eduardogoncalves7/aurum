@@ -8,19 +8,8 @@ import { getServiceDisplayPrice } from "@/lib/pricing";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ServiceImage } from "@/components/home/ServiceImage";
-import { catalogItemToService, listPublicCatalogItems } from "@/lib/catalog-items";
-
-// As páginas estáticas (catálogo de fábrica) continuam pré-geradas no build
-// via generateStaticParams; itens do banco caem no fallback dinâmico do
-// Next.js. Esse revalidate evita que qualquer uma delas fique com foto/
-// descrição/preço desatualizados por muito tempo depois de uma edição no
-// /admin, sem abrir mão do cache (diferente de force-dynamic).
-export const revalidate = 60;
 
 export function generateStaticParams() {
-  // Só pré-renderiza o catálogo estático no build. Itens do banco (admin)
-  // são resolvidos sob demanda na primeira visita (dynamicParams padrão do
-  // Next.js já cobre isso) — não têm como entrar aqui, mudam a qualquer hora.
   return services.filter((s) => !s.hiddenFromCatalog).map((s) => ({ slug: s.id }));
 }
 
@@ -30,13 +19,7 @@ export default async function ServiceDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
-  let service = getServiceById(slug);
-  if (!service) {
-    const dbItems = await listPublicCatalogItems().catch(() => []);
-    const dbService = dbItems.find((i) => i.id === slug);
-    if (dbService) service = catalogItemToService(dbService);
-  }
+  const service = getServiceById(slug);
   if (!service) notFound();
 
   const { value, isRange } = getServiceDisplayPrice(service);

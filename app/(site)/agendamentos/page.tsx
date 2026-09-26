@@ -3,25 +3,33 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarX, LogOut } from "lucide-react";
-import { clearSession, getSession } from "@/lib/storage";
-import { getPublicConfig } from "@/lib/config";
-import { vehicleLabelFromAgendamento } from "@/lib/vehicle";
+import {
+  AppointmentWithDetails,
+  clearSession,
+  getAppointmentsForPhone,
+  getConfig,
+  getSession,
+} from "@/lib/storage";
+import { getServiceById } from "@/lib/data/services";
+import { vehicleSummaryLabel } from "@/lib/vehicle";
 import { formatCurrency, formatDatePtBr } from "@/lib/formatters";
 import { buildCancelWhatsAppMessage, buildWhatsAppLink } from "@/lib/whatsapp";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Agendamento, AgendamentoStatus } from "@/lib/agendamentos";
+import { Quote } from "@/types";
 
-const statusLabel: Record<AgendamentoStatus, string> = {
-  pending: "Pendente",
-  confirmed: "Confirmado",
+const statusLabel: Record<Quote["status"], string> = {
+  draft: "Rascunho",
+  sent: "Enviado",
+  scheduled: "Agendado",
   completed: "Concluído",
   cancelled: "Cancelado",
 };
 
-const statusTone: Record<AgendamentoStatus, "neutral" | "gold" | "success" | "warning"> = {
-  pending: "warning",
-  confirmed: "gold",
+const statusTone: Record<Quote["status"], "neutral" | "gold" | "success" | "warning"> = {
+  draft: "neutral",
+  sent: "gold",
+  scheduled: "warning",
   completed: "success",
   cancelled: "neutral",
 };
@@ -29,22 +37,14 @@ const statusTone: Record<AgendamentoStatus, "neutral" | "gold" | "success" | "wa
 export default function AgendamentosPage() {
   const [checked, setChecked] = useState(false);
   const [session, setSessionState] = useState<{ name: string; phone: string } | null>(null);
-  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
-  const [loadError, setLoadError] = useState(false);
-  const config = getPublicConfig();
+  const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
 
   useEffect(() => {
     const s = getSession();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lê localStorage; precisa rodar após a hidratação para não gerar mismatch SSR/cliente
     setSessionState(s);
     if (s) {
-      fetch(`/api/agendamentos?telefone=${encodeURIComponent(s.phone)}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Falha ao carregar agendamentos");
-          return res.json();
-        })
-        .then((data) => setAgendamentos(data.agendamentos ?? []))
-        .catch(() => setLoadError(true));
+      setAppointments(getAppointmentsForPhone(s.phone));
     }
     setChecked(true);
   }, []);
@@ -77,17 +77,13 @@ export default function AgendamentosPage() {
             Meus agendamentos
           </h1>
           <p className="mt-1 text-sm text-muted">{session.name} · {session.phone}</p>
-          {/* Nota pra quem mexer aqui: a sessão salva no navegador (nome+
-              telefone) não é autenticação — qualquer um que informe o mesmo
-              telefone no /orcamento acessa o mesmo histórico. Não transformar
-              isso num controle de acesso real. */}
         </div>
         <button
           type="button"
           onClick={() => {
             clearSession();
             setSessionState(null);
-            setAgendamentos([]);
+            setAppointments([]);
           }}
           className="flex items-center gap-1.5 text-xs text-muted-dark hover:text-foreground"
         >
@@ -96,14 +92,7 @@ export default function AgendamentosPage() {
         </button>
       </div>
 
-      {loadError && (
-        <p className="mt-6 text-sm text-red-400">
-          Não foi possível carregar seus agendamentos agora. Tente novamente
-          em instantes.
-        </p>
-      )}
-
-      {!loadError && agendamentos.length === 0 ? (
+      {appointments.length === 0 ? (
         <div className="mt-10 flex flex-col items-center gap-4 text-center">
           <CalendarX className="text-muted" size={32} strokeWidth={1.5} />
           <p className="text-sm text-muted">
@@ -115,46 +104,45 @@ export default function AgendamentosPage() {
         </div>
       ) : (
         <div className="mt-6 flex flex-col gap-3">
-          {agendamentos.map((agendamento) => {
-            const serviceNames = agendamento.servicos.map((s) => s.nome);
-            const cancellable =
-              agendamento.status !== "cancelled" && agendamento.status !== "completed";
+          {appointments.map(({ appointment, quote, vehicle }) => {
+            const serviceNames = quote.serviceIds
+              .map((id) => getServiceById(id)?.name)
+              .filter((n): n is string => !!n);
+            const cancellable = quote.status !== "cancelled" && quote.status !== "completed";
 
             return (
               <div
-                key={agendamento.id}
+                key={appointment.id}
                 className="rounded-xl border border-border bg-background-secondary p-4"
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-display font-bold text-foreground">
-                    {formatDatePtBr(agendamento.data)} · {agendamento.horario}
+                    {formatDatePtBr(appointment.date)} · {appointment.time}
                   </p>
-                  <Badge tone={statusTone[agendamento.status]}>
-                    {statusLabel[agendamento.status]}
+                  <Badge tone={statusTone[quote.status]}>
+                    {statusLabel[quote.status]}
                   </Badge>
                 </div>
                 <p className="mt-1 text-sm text-muted">
-                  {vehicleLabelFromAgendamento(agendamento.veiculoTipo, agendamento.veiculoDetalhe)}
-                  {" · "}
-                  {serviceNames.join(", ")}
+                  {vehicleSummaryLabel(vehicle)} · {serviceNames.join(", ")}
                 </p>
                 <p className="mt-1 text-xs text-muted-dark">
-                  {agendamento.formaEntrega === "dropoff"
+                  {appointment.deliveryMethod === "dropoff"
                     ? "Leva até a loja"
                     : "Busca em casa (a combinar)"}
                 </p>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <p className="font-display font-bold text-gold-light">
-                    {formatCurrency(agendamento.valorEstimado)}
+                    {formatCurrency(quote.estimatedTotal)}
                   </p>
                   {cancellable && (
                     <a
                       href={buildWhatsAppLink(
-                        config.whatsappDestination,
+                        getConfig().whatsappDestination,
                         buildCancelWhatsAppMessage({
                           serviceNames,
-                          dateLabel: formatDatePtBr(agendamento.data),
-                          time: agendamento.horario,
+                          dateLabel: formatDatePtBr(appointment.date),
+                          time: appointment.time,
                         })
                       )}
                       target="_blank"

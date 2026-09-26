@@ -33,11 +33,6 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# fotos enviadas pelo /admin — vivem no volume persistente do deploy, não
-# no repositório (ver README)
-/public/uploads/*
-!/public/uploads/.gitkeep
-
 # vercel
 .vercel
 

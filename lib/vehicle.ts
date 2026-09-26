@@ -1,4 +1,4 @@
-import { CarBodyCategory, CarSizeCategory, Vehicle, VehicleChatChoice, VehicleType } from "@/types";
+import { CarBodyCategory, CarSizeCategory, Vehicle, VehicleChatChoice } from "@/types";
 
 /**
  * Etapa única "Qual veículo vamos cuidar?" — cobre carros com uma pergunta
@@ -46,17 +46,4 @@ export function vehicleSummaryLabel(vehicle: Vehicle | null): string {
   if (!vehicle) return "Não informado";
   if (vehicle.type === "motorcycle") return "Moto";
   return vehicle.chatChoice ? vehicleChoiceLabel(vehicle.chatChoice) : "Carro";
-}
-
-/** Mesma ideia de vehicleSummaryLabel, mas a partir dos campos planos que
- * vêm de um Agendamento (API) — não existe mais um objeto Vehicle separado. */
-export function vehicleLabelFromAgendamento(
-  veiculoTipo: VehicleType,
-  veiculoDetalhe: VehicleChatChoice | "moto" | null | undefined
-): string {
-  if (veiculoTipo === "motorcycle") return "Moto";
-  if (veiculoDetalhe && veiculoDetalhe !== "moto") {
-    return vehicleChoiceLabel(veiculoDetalhe);
-  }
-  return "Carro";
 }

@@ -21,6 +21,14 @@ export type VehicleCategory = CarSizeCategory | CarBodyCategory;
  */
 export type VehicleChatChoice = "hatch" | "sedan" | "suv" | "pickup" | "outro";
 
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string; // identificador único do cliente, formato livre (com máscara na UI)
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Vehicle {
   id: string;
   customerId: string;
@@ -44,8 +52,6 @@ export type VehicleDimension = "size" | "body" | "motorcycle" | "none";
 export interface Service {
   id: string;
   category: ServiceCategoryId;
-  /** Texto livre, opcional — usado pelos itens criados no /admin. */
-  subcategory?: string;
   name: string;
   shortDescription: string;
   description?: string;
@@ -97,7 +103,6 @@ export interface ServiceVariant {
 }
 
 export type ServiceCategoryId =
-  | "combos"
   | "protecao"
   | "limpeza_carro"
   | "polimento"
@@ -112,6 +117,13 @@ export interface ServiceCategoryInfo {
   description?: string;
 }
 
+export type QuoteStatus =
+  | "draft"
+  | "sent"
+  | "scheduled"
+  | "completed"
+  | "cancelled";
+
 export interface QuoteLineItem {
   serviceId: string;
   variantId?: string;
@@ -121,8 +133,28 @@ export interface QuoteLineItem {
   requiresEvaluation: boolean;
 }
 
+export interface Quote {
+  id: string;
+  customerId: string;
+  vehicleId: string;
+  serviceIds: string[];
+  lineItems: QuoteLineItem[];
+  estimatedTotal: number;
+  status: QuoteStatus;
+  createdAt: string;
+}
+
 /** Como o cliente prefere levar o veículo até a Aurum. */
 export type DeliveryMethod = "dropoff" | "pickup";
+
+export interface Appointment {
+  id: string;
+  quoteId: string;
+  date: string; // ISO date, yyyy-mm-dd
+  time: string; // HH:mm
+  status: "pending" | "confirmed" | "cancelled";
+  deliveryMethod: DeliveryMethod;
+}
 
 /** Resultado do cálculo de preço de um serviço para um veículo específico */
 export interface PriceResult {
