@@ -7,6 +7,7 @@ import {
   Users,
   FileText,
   Wrench,
+  Sparkles,
   Settings,
   ArrowLeft,
 } from "lucide-react";
@@ -16,8 +17,9 @@ import { cn } from "@/lib/utils";
 const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
-  { href: "/admin/orcamentos", label: "Orçamentos", icon: FileText },
+  { href: "/admin/orcamentos", label: "Agendamentos", icon: FileText },
   { href: "/admin/servicos", label: "Serviços", icon: Wrench },
+  { href: "/admin/promocoes", label: "Promoções", icon: Sparkles },
   { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ];
 
