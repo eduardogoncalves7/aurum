@@ -16,12 +16,12 @@ export default async function ServicosPage() {
   // funcionando normalmente mesmo assim.
   const dbItems = await listPublicCatalogItems().catch((error) => {
     console.error("Erro ao carregar itens de catálogo do banco:", error);
-    return [];
+    return null;
   });
 
-  const promotionalServices = dbItems.filter(isPromotion).map(catalogItemToService);
-  const regularDbServices = dbItems.filter((i) => !isPromotion(i)).map(catalogItemToService);
-  const allServices = [...staticServices, ...regularDbServices];
+  const promotionalServices = (dbItems ?? []).filter(isPromotion).map(catalogItemToService);
+  const regularDbServices = (dbItems ?? []).filter((i) => !isPromotion(i)).map(catalogItemToService);
+  const allServices = dbItems ? regularDbServices : staticServices;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">

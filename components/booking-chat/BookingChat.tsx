@@ -74,15 +74,19 @@ export function BookingChat() {
   const [bookedSlotsForDate, setBookedSlotsForDate] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dbServices, setDbServices] = useState<Service[]>([]);
+  const [managedServiceIds, setManagedServiceIds] = useState<string[]>([]);
+  const [config, setConfig] = useState(() => getPublicConfig());
 
-  const config = useMemo(() => getPublicConfig(), []);
+  useEffect(() => {
+    fetch("/api/config").then((res) => res.ok ? res.json() : null).then((value) => { if (value) setConfig(value); }).catch(() => {});
+  }, []);
 
   // Itens de catálogo criados no /admin (serviços novos + promoções em
   // vigor) — somam ao catálogo estático em todo o fluxo abaixo.
   useEffect(() => {
     fetch("/api/catalog-items")
       .then((res) => (res.ok ? res.json() : { services: [] }))
-      .then((data) => setDbServices(data.services ?? []))
+      .then((data) => { setDbServices(data.services ?? []); setManagedServiceIds(data.managedIds ?? []); })
       .catch(() => setDbServices([]));
   }, []);
 
@@ -157,11 +161,12 @@ export function BookingChat() {
   }, [vehicleChoice]);
 
   const availableServices = useMemo(() => {
-    const combined = [...services, ...dbServices];
+    const managed = new Set(managedServiceIds);
+    const combined = [...dbServices, ...services.filter((service) => !managed.has(service.id))];
     return vehicle
       ? combined.filter((s) => isServiceAvailableForVehicleType(s, vehicle.type))
       : combined;
-  }, [vehicle, dbServices]);
+  }, [vehicle, dbServices, managedServiceIds]);
 
   function toggleService(serviceId: string) {
     setSelectedServiceIds((prev) =>

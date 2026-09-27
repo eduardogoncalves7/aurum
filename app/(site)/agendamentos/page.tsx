@@ -31,9 +31,10 @@ export default function AgendamentosPage() {
   const [session, setSessionState] = useState<{ name: string; phone: string } | null>(null);
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [loadError, setLoadError] = useState(false);
-  const config = getPublicConfig();
+  const [config, setConfig] = useState(() => getPublicConfig());
 
   useEffect(() => {
+    fetch("/api/config").then((res) => res.ok ? res.json() : null).then((value) => { if (value) setConfig(value); }).catch(() => {});
     const s = getSession();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lê localStorage; precisa rodar após a hidratação para não gerar mismatch SSR/cliente
     setSessionState(s);

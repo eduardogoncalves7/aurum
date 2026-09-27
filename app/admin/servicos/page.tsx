@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import type { CatalogItem } from "@/lib/catalog-items";
-import { services as staticServices } from "@/lib/data/services";
 import { getCategoryLabel } from "@/lib/data/categories";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -44,8 +43,7 @@ export default function AdminServicesPage() {
         <div>
           <h1 className="font-display text-2xl font-extrabold text-foreground">Serviços</h1>
           <p className="mt-1 max-w-xl text-sm text-muted">
-            Serviços criados aqui somam ao catálogo de fábrica (abaixo, só
-            leitura) — aparecem em /servicos e no orçamento automaticamente.
+            Edite aqui os serviços do catálogo, preços, opções e disponibilidade por veículo.
           </p>
         </div>
         {editing === null && (
@@ -111,23 +109,6 @@ export default function AdminServicesPage() {
         ))}
       </div>
 
-      <h2 className="mt-10 font-display text-lg font-bold text-foreground">
-        Catálogo de fábrica (código, só leitura)
-      </h2>
-      <p className="mt-1 text-xs text-muted-dark">
-        Pra mudar isto aqui, edite lib/data/services.ts e faça um novo deploy.
-      </p>
-      <div className="mt-3 flex flex-col gap-2">
-        {staticServices.map((service) => (
-          <div
-            key={service.id}
-            className="rounded-xl border border-border bg-background-secondary/50 px-4 py-3"
-          >
-            <p className="font-medium text-foreground">{service.name}</p>
-            <p className="mt-0.5 text-xs text-muted-dark">{getCategoryLabel(service.category)}</p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

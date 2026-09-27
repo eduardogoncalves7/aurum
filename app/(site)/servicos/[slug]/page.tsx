@@ -31,12 +31,9 @@ export default async function ServiceDetailPage({
 }) {
   const { slug } = await params;
 
-  let service = getServiceById(slug);
-  if (!service) {
-    const dbItems = await listPublicCatalogItems().catch(() => []);
-    const dbService = dbItems.find((i) => i.id === slug);
-    if (dbService) service = catalogItemToService(dbService);
-  }
+  const dbItems = await listPublicCatalogItems().catch(() => null);
+  const dbService = dbItems?.find((i) => i.id === slug);
+  const service = dbService ? catalogItemToService(dbService) : dbItems ? undefined : getServiceById(slug);
   if (!service) notFound();
 
   const { value, isRange } = getServiceDisplayPrice(service);

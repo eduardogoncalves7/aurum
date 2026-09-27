@@ -4,18 +4,28 @@ import { useState } from "react";
 import { Plus, Trash2, Upload } from "lucide-react";
 import type { CatalogItem, CatalogItemInput } from "@/lib/catalog-items";
 import { serviceCategories } from "@/lib/data/categories";
-import { ServiceCategoryId, VehicleType } from "@/types";
+import { PricingType, ServiceCategoryId, VehicleDimension, VehicleType } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-const CAR_PRICE_FIELDS: { key: string; label: string }[] = [
-  { key: "hatch_sedan", label: "Hatch / Sedan (R$)" },
-  { key: "suv", label: "SUV (R$)" },
-  { key: "pickup", label: "Caminhonete (R$)" },
-];
 const MOTO_PRICE_FIELDS: { key: string; label: string }[] = [
   { key: "motorcycle", label: "Moto (R$)" },
 ];
+const SIZE_PRICE_FIELDS = [
+  { key: "small", label: "Pequeno (R$)" }, { key: "medium", label: "Médio (R$)" }, { key: "large", label: "Grande (R$)" },
+];
+const BODY_PRICE_FIELDS = [
+  { key: "hatch_sedan", label: "Hatch / Sedan (R$)" }, { key: "suv", label: "SUV (R$)" }, { key: "pickup", label: "Caminhonete (R$)" },
+];
+
+function toDisplayDate(value?: string | null) {
+  return value ? value.split("-").reverse().join("/") : "";
+}
+
+function toIsoDate(value: string) {
+  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return match ? `${match[3]}-${match[2]}-${match[1]}` : "";
+}
 
 interface FormState {
   nome: string;
@@ -30,6 +40,9 @@ interface FormState {
   promocaoInicio: string;
   promocaoFim: string;
   ativo: boolean;
+  variantes: { id: string; label: string; prices: Record<string, string>; gift: string[] }[];
+  pricingType: PricingType;
+  vehicleDimension: VehicleDimension;
 }
 
 function toFormState(item?: CatalogItem): FormState {
@@ -45,9 +58,15 @@ function toFormState(item?: CatalogItem): FormState {
     ),
     includes: item?.includes?.length ? item.includes : [""],
     foto: item?.foto ?? null,
-    promocaoInicio: item?.promocaoInicio ?? "",
-    promocaoFim: item?.promocaoFim ?? "",
+    promocaoInicio: toDisplayDate(item?.promocaoInicio),
+    promocaoFim: toDisplayDate(item?.promocaoFim),
     ativo: item?.ativo ?? true,
+    variantes: (item?.variantes ?? []).map((v) => ({
+      id: v.id, label: v.label, gift: v.gift ?? [],
+      prices: Object.fromEntries(Object.entries(v.prices ?? {}).map(([k, value]) => [k, String(value)])),
+    })),
+    pricingType: item?.detalhes?.pricingType ?? "vehicle_category",
+    vehicleDimension: item?.detalhes?.vehicleDimension ?? "body",
   };
 }
 
@@ -67,7 +86,12 @@ export function CatalogItemForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const priceFields = form.veiculoTipo === "car" ? CAR_PRICE_FIELDS : MOTO_PRICE_FIELDS;
+  const priceFields = form.pricingType === "fixed"
+    ? [{ key: "fixed", label: "Preço fixo (R$)" }]
+    : form.pricingType === "starting_at"
+      ? [{ key: "starting_at", label: "Preço inicial (R$)" }]
+      : form.vehicleDimension === "size" ? SIZE_PRICE_FIELDS
+        : form.vehicleDimension === "motorcycle" ? MOTO_PRICE_FIELDS : form.veiculoTipo === "car" ? BODY_PRICE_FIELDS : MOTO_PRICE_FIELDS;
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -90,12 +114,18 @@ export function CatalogItemForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (variant === "promotion" && (!toIsoDate(form.promocaoInicio) || !toIsoDate(form.promocaoFim))) {
+      setError("Informe as duas datas válidas no formato dd/mm/aaaa.");
+      return;
+    }
     setSaving(true);
     setError(null);
 
     const precos: Record<string, number> = {};
     for (const field of priceFields) {
-      precos[field.key] = Number(form.precos[field.key] ?? 0);
+      if (form.precos[field.key] !== undefined && form.precos[field.key] !== "") {
+        precos[field.key] = Number(form.precos[field.key]);
+      }
     }
 
     const payload: CatalogItemInput = {
@@ -108,9 +138,23 @@ export function CatalogItemForm({
       precos,
       includes: form.includes.map((i) => i.trim()).filter(Boolean),
       foto: form.foto,
-      promocaoInicio: variant === "promotion" ? form.promocaoInicio || null : null,
-      promocaoFim: variant === "promotion" ? form.promocaoFim || null : null,
+      promocaoInicio: variant === "promotion" ? toIsoDate(form.promocaoInicio) || null : null,
+      promocaoFim: variant === "promotion" ? toIsoDate(form.promocaoFim) || null : null,
       ativo: form.ativo,
+      variantes: form.variantes.map((v) => ({
+        id: v.id || v.label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        label: v.label,
+        gift: v.gift,
+        prices: Object.fromEntries(Object.entries(v.prices).filter(([, price]) => price !== "").map(([key, price]) => [key, Number(price)])),
+      })),
+      detalhes: {
+        ...initialItem?.detalhes,
+        pricingType: form.pricingType,
+        vehicleDimension: form.vehicleDimension,
+        prices: form.pricingType === "vehicle_category" ? precos : initialItem?.detalhes?.prices,
+        fixedPrice: form.pricingType === "fixed" ? precos.fixed : initialItem?.detalhes?.fixedPrice,
+        startingPrice: form.pricingType === "starting_at" ? precos.starting_at : initialItem?.detalhes?.startingPrice,
+      },
     };
 
     try {
@@ -215,6 +259,26 @@ export function CatalogItemForm({
         />
       </div>
 
+      <section className="rounded-lg border border-border p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Variantes / subcategorias</p>
+            <p className="text-xs text-muted-dark">Cada opção pode ter preço por porte do veículo.</p>
+          </div>
+          <button type="button" onClick={() => setForm((f) => ({ ...f, variantes: [...f.variantes, { id: "", label: "", prices: {}, gift: [] }] }))} className="flex items-center gap-1 text-xs text-gold"><Plus size={14}/> Adicionar</button>
+        </div>
+        <div className="flex flex-col gap-3">
+          {form.variantes.map((variant, index) => (
+            <div key={index} className="grid gap-2 rounded-lg bg-background-elevated p-3 sm:grid-cols-[1fr_repeat(3,130px)_auto]">
+              <Input label="Nome da opção" value={variant.label} required onChange={(e) => setForm((f) => ({ ...f, variantes: f.variantes.map((v,i) => i === index ? {...v,label:e.target.value} : v) }))}/>
+              <Input label="Brindes (separe por vírgula)" value={variant.gift.join(", ")} onChange={(e) => setForm((f) => ({...f,variantes:f.variantes.map((v,i) => i === index ? {...v,gift:e.target.value.split(",").map((gift) => gift.trim()).filter(Boolean)} : v)}))}/>
+              {(form.veiculoTipo === "car" ? [{key:"small",label:"Pequeno"},{key:"medium",label:"Médio"},{key:"large",label:"Grande"}] : [{key:"motorcycle",label:"Moto"}]).map((field) => <Input key={field.key} label={`${field.label} (R$)`} type="number" min={0} step="0.01" value={variant.prices[field.key] ?? ""} onChange={(e) => setForm((f) => ({...f,variantes:f.variantes.map((v,i) => i === index ? {...v,prices:{...v.prices,[field.key]:e.target.value}} : v)}))}/>) }
+              <button type="button" onClick={() => setForm((f) => ({...f,variantes:f.variantes.filter((_,i) => i !== index)}))} aria-label="Remover variante" className="self-end rounded-lg border border-border p-3 text-muted hover:text-red-400"><Trash2 size={15}/></button>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div>
         <label className="mb-1.5 block text-sm font-medium text-muted">
           Preço por categoria de veículo
@@ -227,7 +291,7 @@ export function CatalogItemForm({
               type="number"
               min={0}
               step="0.01"
-              required
+              required={!form.variantes.length}
               value={form.precos[field.key] ?? ""}
               onChange={(e) =>
                 setForm((f) => ({
@@ -307,14 +371,20 @@ export function CatalogItemForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
             label="Início da promoção"
-            type="date"
+            type="text"
+            placeholder="dd/mm/aaaa"
+            inputMode="numeric"
+            pattern="\\d{2}/\\d{2}/\\d{4}"
             required
             value={form.promocaoInicio}
             onChange={(e) => setForm((f) => ({ ...f, promocaoInicio: e.target.value }))}
           />
           <Input
             label="Fim da promoção"
-            type="date"
+            type="text"
+            placeholder="dd/mm/aaaa"
+            inputMode="numeric"
+            pattern="\\d{2}/\\d{2}/\\d{4}"
             required
             value={form.promocaoFim}
             onChange={(e) => setForm((f) => ({ ...f, promocaoFim: e.target.value }))}

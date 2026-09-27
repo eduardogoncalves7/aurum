@@ -596,7 +596,7 @@ export const services: Service[] = [
 ];
 
 export function getServiceById(id: string, extra: Service[] = []): Service | undefined {
-  return services.find((s) => s.id === id) ?? extra.find((s) => s.id === id);
+  return extra.find((s) => s.id === id) ?? services.find((s) => s.id === id);
 }
 
 /** Convenção de arquivo: uma imagem por serviço em /public/images/services/,
