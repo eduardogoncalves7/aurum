@@ -37,3 +37,53 @@ Execute `npm test`. A fixture de 51 serviços + 950 linhas de checkboxes é **si
 o contexto fornecido não contém as 51 linhas reais completas. É necessário obter o
 CSV/JSON real para cumprir a verificação com dados de produção. Os testes não
 acessam o Google nem leem credenciais reais.
+
+## Mapper
+
+`rowsToServices(rows, portes, config, { now? })` retorna `{ services, groups, errors }`.
+Recebe os arrays `rows` das leituras, e Config pode ser array de `{ chave, valor }`
+ou objeto. A função não acessa rede nem escreve logs: `errors` é o relatório seguro
+de linhas descartadas (linha do array + 2; 0 para conflitos entre grupos/config).
+O chamador pode encaminhar os códigos a `appendLog` sem enviar dados de células.
+
+`services` preserva os serviços reais usados pelo orçamento e os IDs legados.
+`groups` contém Limpeza (seleção única + adicionais), Higienização (múltipla),
+Revestimento (única), Kits (múltipla) e PPF Completos (única). Não cria um quarto
+serviço fictício de Limpeza: o único card do grupo usa os três serviços reais,
+como o componente atual. Vitrines cerâmica/PPF recebem variantes/tabelas derivadas.
+As telas ainda não consomem esse resultado; a integração de catálogo continua pendente.
+
+`pricesForVehicle` resolve os preços segundo Portes, inclusive Sedan e Outro.
+O pequeno suporte em `calculateServicePrice` aplica essa tabela somente aos serviços
+mapeados. Isso corrige a divergência do código antigo que associava Sedan a médio:
+com o mapeamento fornecido, Hatch/Sedan usa Carro Pequeno. `priceOnRequest` identifica
+Sob consulta e impede incluí-lo no total como preço fixo zero. As telas podem usar
+`originalPrice`/`originalPrices` (também nas variantes e itens de tabela) para riscar
+o preço original; o mapper não altera componentes visuais.
+
+Datas ISO com fuso são aceitas. Datas sem horário cobrem o dia inteiro em UTC-3
+(São Paulo); início/fim são inclusivos e ambos são obrigatórios para promoções.
+Promoção com janela inválida gera erro por linha. Valores originais ficam preservados.
+
+`serviceToRows(service, portes)` retorna linhas normalizadas para `upsertRows`.
+Os metadados `sheetSource` são serializáveis e devem ser mantidos no fluxo de edição:
+sem eles não há como reconstruir auditoria, promoções e demais campos exclusivos
+da planilha. Editar nome preserva os IDs; editar preço durante promoção altera o
+promocional vigente, preservando o preço-base. Os metadados não são credenciais.
+Linhas inativas/descartadas não compõem o resultado e não são apagadas da planilha.
+
+Para serviços novos, a primeira conversão atribui `service.id` e `sheetSource` ao
+objeto recebido, usando slug + UUID; `legacy_id` fica vazio. Persista esse objeto/ID
+para que retries e edições mantenham a identidade. O mesmo nome pode ser criado
+em duas entidades distintas sem colisão. Serviços novos precisam indicar um tipo
+de veículo e preços compatíveis com a dimensão e a aba Portes.
+
+Edição de tabelas/variantes de uma vitrine é feita nos serviços filhos reais.
+Alterações na dimensão, compatibilidade ou nas projeções derivadas são rejeitadas
+com `SheetsError(SCHEMA)`, evitando perda silenciosa de dados. Após gravar, releia
+para atualizar os metadados. A auditoria de escrita é preenchida por `upsertRows`.
+
+A fixture `catalog-fixture.ts` reconstrói 51 linhas a partir do catálogo versionado
+e aplica as três correções documentadas (120, 300 e 250). Valida ida e volta das 27
+colunas, agrupamentos e preços, mas **não substitui o export real** da planilha,
+necessário para certificar todos os nomes e conteúdos de produção.

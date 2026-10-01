@@ -18,6 +18,15 @@ export function calculateServicePrice(
   vehicle: Vehicle | null,
   variantId?: string
 ): PriceResult {
+  if (service.priceOnRequest) return { type: "unavailable", value: 0, requiresEvaluation: true };
+  const mappedVariant = variantId ? service.variants?.find(v => v.id === variantId) : undefined;
+  const mappedPrices = mappedVariant?.pricesForVehicle ?? service.pricesForVehicle;
+  if (mappedPrices && (vehicle || service.pricingType === "vehicle_category")) {
+    const key = vehicle?.type === "motorcycle" ? "motorcycle" : vehicle?.chatChoice;
+    const value = key ? mappedPrices[key] : undefined;
+    if (value === undefined) return { type: "unavailable", value: 0, requiresEvaluation: true };
+    return { type: key && service.estimateForVehicle?.[key] ? "estimate" : "fixed", value, requiresEvaluation: false };
+  }
   // Preço fixo, não depende de veículo.
   if (service.pricingType === "fixed") {
     return { type: "fixed", value: service.fixedPrice ?? 0, requiresEvaluation: false };

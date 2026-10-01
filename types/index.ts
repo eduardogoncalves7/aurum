@@ -66,6 +66,14 @@ export interface Service {
   gift?: string[];
   /** true quando o valor final depende de avaliação presencial */
   requiresEvaluation?: boolean;
+  /** Ausência de preço, sem converter "Sob consulta" em um serviço gratuito. */
+  priceOnRequest?: boolean;
+  /** Preços resolvidos pela aba Portes, inclusive Sedan e Outro. */
+  pricesForVehicle?: Partial<Record<VehicleChatChoice | "motorcycle", number>>;
+  estimateForVehicle?: Partial<Record<VehicleChatChoice | "motorcycle", boolean>>;
+  /** Preços anteriores a uma promoção vigente, para exibição riscada. */
+  originalPrice?: number;
+  originalPrices?: Service["prices"];
   /** Duração aproximada em minutos, quando conhecida (nenhum serviço do
    * catálogo atual define isso ainda — exibido apenas se presente). */
   durationMinutes?: number;
@@ -85,7 +93,7 @@ export interface Service {
    * página de detalhe como uma ou mais tabelas de preço. */
   priceBreakdown?: {
     title: string;
-    items: { name: string; price: number; isEstimate?: boolean }[];
+    items: { name: string; price: number; isEstimate?: boolean; originalPrice?: number }[];
   }[];
 }
 
@@ -94,6 +102,8 @@ export interface ServiceVariant {
   label: string;
   prices?: Partial<Record<VehicleCategory, number>>;
   gift?: string[];
+  pricesForVehicle?: Service["pricesForVehicle"];
+  originalPrices?: Service["prices"];
 }
 
 export type ServiceCategoryId =

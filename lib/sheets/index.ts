@@ -3,6 +3,8 @@ import { createTransport, type TransportOptions } from "./transport";
 import { serviceRowSchema, SheetsError, type RowError, type RowInput, type ServiceRow } from "./schema";
 export { SheetsError, serviceRowSchema } from "./schema";
 export type { ServiceRow, RowInput, RowError } from "./schema";
+export { rowsToServices, serviceToRows } from "./mapper";
+export type { MapperResult, MapperError, MapperConfig, PorteRow, SheetService, ServiceGroup } from "./mapper";
 
 type Cell = string | number | boolean;
 const valuesSchema = z.object({ values: z.array(z.array(z.union([z.string(), z.number(), z.boolean(), z.null()]))).optional().default([]) });
