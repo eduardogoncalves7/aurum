@@ -1,0 +1,80 @@
+-- Bootstrap: executed before consulting legacy migrations, in a transaction.
+DO $migration$
+DECLARE
+  tables text[] := ARRAY['_migrations', 'agendamentos', 'catalog_items', 'site_settings'];
+  relation_name text;
+  existing_public integer := 0;
+  existing_target integer := 0;
+  actual_columns text[];
+  expected_columns text[];
+  before_count bigint;
+  after_count bigint;
+BEGIN
+  IF pg_catalog.obj_description(pg_catalog.to_regclass('detailing._migrations'), 'pg_class')
+      = 'aurum-detailing:migrations:v1' THEN
+    RETURN;
+  END IF;
+  FOREACH relation_name IN ARRAY tables LOOP
+    IF pg_catalog.to_regclass('public.' || relation_name) IS NOT NULL THEN
+      existing_public := existing_public + 1;
+    END IF;
+    IF pg_catalog.to_regclass('detailing.' || relation_name) IS NOT NULL THEN
+      existing_target := existing_target + 1;
+    END IF;
+  END LOOP;
+  IF existing_target > 0 THEN
+    RAISE EXCEPTION 'AURUM_TARGET_CONFLICT: detailing contains unverified tables';
+  END IF;
+  IF existing_public > 0 THEN
+    IF pg_catalog.current_setting('detailing.adopt_public', true) IS DISTINCT FROM 'on' THEN
+      RAISE EXCEPTION 'AURUM_ADOPTION_REQUIRED: backup and run migrate.js --adopt-public';
+    END IF;
+    IF existing_public <> 4 THEN
+      RAISE EXCEPTION 'AURUM_SOURCE_INCOMPLETE: expected all four legacy tables';
+    END IF;
+    -- Match columns/types and history, not just table names. Lock the four
+    -- tables to keep shape/data stable throughout validation and transfer.
+    FOREACH relation_name IN ARRAY tables LOOP
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'public' AND c.relname = relation_name AND c.relkind = 'r'
+      ) THEN
+        RAISE EXCEPTION 'AURUM_SOURCE_SHAPE: ordinary tables required';
+      END IF;
+      EXECUTE pg_catalog.format('LOCK TABLE public.%I IN ACCESS EXCLUSIVE MODE', relation_name);
+      SELECT array_agg(a.attname || ':' || pg_catalog.format_type(a.atttypid, a.atttypmod) ORDER BY a.attname)
+        INTO actual_columns FROM pg_catalog.pg_attribute a
+        WHERE a.attrelid = pg_catalog.to_regclass('public.' || relation_name)
+          AND a.attnum > 0 AND NOT a.attisdropped;
+      expected_columns := CASE relation_name
+        WHEN '_migrations' THEN ARRAY['name:text','applied_at:timestamp with time zone']
+        WHEN 'agendamentos' THEN ARRAY['id:uuid','telefone:text','nome:text','veiculo_tipo:text','veiculo_detalhe:text','servicos:jsonb','valor_estimado:numeric(10,2)','data:text','horario:text','forma_entrega:text','status:text','criado_em:timestamp with time zone']
+        WHEN 'catalog_items' THEN ARRAY['id:uuid','nome:text','descricao_curta:text','descricao:text','categoria:text','subcategoria:text','veiculo_tipo:text','precos:jsonb','includes:text[]','foto:text','promocao_inicio:text','promocao_fim:text','ativo:boolean','criado_em:timestamp with time zone','atualizado_em:timestamp with time zone','source_id:text','service_data:jsonb','variantes:jsonb','opcoes_preco:jsonb']
+        WHEN 'site_settings' THEN ARRAY['chave:text','valor:text','atualizado_em:timestamp with time zone']
+      END;
+      SELECT array_agg(value ORDER BY value) INTO expected_columns FROM unnest(expected_columns) AS value;
+      IF actual_columns IS DISTINCT FROM expected_columns THEN
+        RAISE EXCEPTION 'AURUM_SOURCE_SHAPE: legacy columns do not match this project';
+      END IF;
+    END LOOP;
+    IF (SELECT array_agg(name ORDER BY name) FROM public._migrations
+        WHERE name NOT IN ('0004_move_to_detailing.sql', '0005_create_catalog_snapshot.sql')) IS DISTINCT FROM
+        ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql'] THEN
+      RAISE EXCEPTION 'AURUM_SOURCE_HISTORY: legacy history does not match this project';
+    END IF;
+  END IF;
+  CREATE SCHEMA IF NOT EXISTS detailing;
+  IF existing_public = 4 THEN
+    FOREACH relation_name IN ARRAY tables LOOP
+      EXECUTE pg_catalog.format('SELECT count(*) FROM public.%I', relation_name) INTO before_count;
+      EXECUTE pg_catalog.format('ALTER TABLE public.%I SET SCHEMA detailing', relation_name);
+      EXECUTE pg_catalog.format('SELECT count(*) FROM detailing.%I', relation_name) INTO after_count;
+      IF before_count <> after_count THEN RAISE EXCEPTION 'AURUM_COUNT_MISMATCH'; END IF;
+    END LOOP;
+  ELSE
+    CREATE TABLE detailing._migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
+  END IF;
+  COMMENT ON TABLE detailing._migrations IS 'aurum-detailing:migrations:v1';
+END
+$migration$;

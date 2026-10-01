@@ -16,7 +16,12 @@ export function getPool(): Pool {
         "DATABASE_URL não configurada — defina a connection string do Postgres nas variáveis de ambiente."
       );
     }
-    global.__aurumPgPool = new Pool({ connectionString });
+    global.__aurumPgPool = new Pool({
+      connectionString,
+      options: "-c search_path=detailing,pg_catalog",
+      connectionTimeoutMillis: 5000,
+      statement_timeout: 15000,
+    });
   }
   return global.__aurumPgPool;
 }

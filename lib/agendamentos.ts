@@ -85,7 +85,7 @@ export async function createAgendamento(
   const pool = getPool();
 
   const result = await pool.query(
-    `INSERT INTO agendamentos
+    `INSERT INTO detailing.agendamentos
       (telefone, nome, veiculo_tipo, veiculo_detalhe, servicos, valor_estimado, data, horario, forma_entrega, status)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
      RETURNING *`,
@@ -111,7 +111,7 @@ export async function listAgendamentosByTelefone(
   const telefone = normalizePhone(telefoneRaw);
   const pool = getPool();
   const result = await pool.query(
-    `SELECT * FROM agendamentos WHERE telefone = $1 ORDER BY data DESC, horario DESC`,
+    `SELECT * FROM detailing.agendamentos WHERE telefone = $1 ORDER BY data DESC, horario DESC`,
     [telefone]
   );
   return result.rows.map(mapRow);
@@ -124,7 +124,7 @@ export async function listHorariosOcupados(data: string): Promise<string[]> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return [];
   const pool = getPool();
   const result = await pool.query(
-    `SELECT horario FROM agendamentos WHERE data = $1 AND status <> 'cancelled'`,
+    `SELECT horario FROM detailing.agendamentos WHERE data = $1 AND status <> 'cancelled'`,
     [data]
   );
   return result.rows.map((r: { horario: string }) => r.horario);
@@ -133,7 +133,7 @@ export async function listHorariosOcupados(data: string): Promise<string[]> {
 /** Usado só pelo /admin (rota protegida por Basic Auth no middleware). */
 export async function listAllAgendamentos(): Promise<Agendamento[]> {
   const pool = getPool();
-  const result = await pool.query(`SELECT * FROM agendamentos ORDER BY criado_em DESC`);
+  const result = await pool.query(`SELECT * FROM detailing.agendamentos ORDER BY criado_em DESC`);
   return result.rows.map(mapRow);
 }
 
