@@ -1,0 +1,5 @@
+// Synthetic fixture, not production data: the actual 51 rows were not supplied.
+export const header = "servico,compatibilidade,classificacao,tipo_preco,preco,categoria,observacao,id,servico_id,descricao,inclusos,tipo_item,grupo_orcamento,ordem,imagem_url,ativo,visivel_catalogo,preco_promocional,promo_inicio,promo_fim,atualizado_em,atualizado_por,legacy_id,descricao_curta,beneficios,brinde,destaque".split(",");
+export const sample = (i = 1) => ({ servico: `Sintético ${i}`, id: `test-${i}`, compatibilidade: "Carro", classificacao: "SUV", tipo_preco: "Fixo", preco: 100, tipo_item: "principal", ativo: true, visivel_catalogo: true, destaque: false, inclusos: "A; B", beneficios: "C; D", brinde: "", ordem: i });
+export const asRow = (row: Record<string, unknown>, names = header) => names.map(key => row[key] ?? "");
+export const fixture = (names = header): unknown[][] => [names, ...Array.from({ length: 51 }, (_, i) => asRow(sample(i + 1), names)), ...Array.from({ length: 950 }, () => asRow({ ativo: false, visivel_catalogo: false, destaque: false }, names))];
