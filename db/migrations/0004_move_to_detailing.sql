@@ -64,6 +64,14 @@ BEGIN
       RAISE EXCEPTION 'AURUM_SOURCE_HISTORY: legacy history does not match this project';
     END IF;
   END IF;
+  -- A later optional transfer must also carry snapshots created in public.
+  IF existing_public = 4 AND pg_catalog.to_regclass('public.catalog_snapshot') IS NOT NULL THEN
+    IF pg_catalog.to_regclass('detailing.catalog_snapshot') IS NOT NULL THEN
+      RAISE EXCEPTION 'AURUM_TARGET_CONFLICT: snapshot exists in both schemas';
+    END IF;
+    tables := array_append(tables, 'catalog_snapshot');
+    LOCK TABLE public.catalog_snapshot IN ACCESS EXCLUSIVE MODE;
+  END IF;
   CREATE SCHEMA IF NOT EXISTS detailing;
   IF existing_public = 4 THEN
     FOREACH relation_name IN ARRAY tables LOOP

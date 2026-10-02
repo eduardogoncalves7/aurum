@@ -1,4 +1,5 @@
-CREATE TABLE IF NOT EXISTS detailing.catalog_snapshot (
+-- The runner sets the transaction search_path from validated DB_SCHEMA.
+CREATE TABLE IF NOT EXISTS catalog_snapshot (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   gerado_em timestamptz NOT NULL DEFAULT now(),
   origem text NOT NULL,
@@ -6,4 +7,4 @@ CREATE TABLE IF NOT EXISTS detailing.catalog_snapshot (
   conteudo jsonb NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_catalog_snapshot_gerado_em
-  ON detailing.catalog_snapshot (gerado_em DESC, id DESC);
+  ON catalog_snapshot (gerado_em DESC, id DESC);

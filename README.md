@@ -4,9 +4,13 @@ Aplicação Next.js 16 para catálogo, orçamento via WhatsApp e agendamentos. O
 
 ## Banco de dados
 
-As tabelas do Aurum usam o schema **`detailing`**. Para converter o banco atual,
-faça backup e siga [o procedimento de migração, usuário restrito e rollback](db/README.md)
-antes do deploy. A transferência inicial de `public` é explícita (`--adopt-public`).
+O PostgreSQL 16 ? dedicado ao Aurum. `DB_SCHEMA` seleciona o schema e tem padr?o
+`public`; mantenha a `DATABASE_URL` atual. O deploy cria `catalog_snapshot` sem
+mover tabelas nem exigir conta nova ou janela de manuten??o. Consulte o
+[procedimento atual de backup e deploy](db/PROCEDIMENTO-COOLIFY.md).
+
+A transfer?ncia para `detailing` ? [opcional e documentada separadamente](db/PROCEDIMENTO-DETAILING-FUTURO.md).
+Trocar `DB_SCHEMA` sozinho n?o transfere dados.
 
 Configure `DATABASE_URL` para um PostgreSQL acessível pelo container da aplicação. As migrações rodam no start do container. Na primeira leitura do catálogo depois da migração, os serviços existentes são importados automaticamente com seus IDs, preços, descrições, imagens, variantes e dados de orçamento. As alterações seguintes feitas no admin são gravadas no banco.
 

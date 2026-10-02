@@ -6,7 +6,9 @@ import { resolve } from "node:path";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { migrate, connectWithRetry, transaction } = require("../../scripts/migrate.js");
+const { migrate: runMigrations, connectWithRetry, transaction } = require("../../scripts/migrate.js");
+const { getDbSchema, quotedDbSchema } = require("../schema.js");
+const migrate = (pool: unknown, options: Record<string, unknown> = {}) => runMigrations(pool, { schema: "detailing", ...options });
 const read = (name: string) => readFileSync(resolve("db", name), "utf8");
 const legacy = ["0001_create_agendamentos.sql", "0002_create_catalog_items.sql", "0003_expand_catalog.sql"];
 const databases: PGlite[] = [];
@@ -54,6 +56,41 @@ async function snapshot(db: PGlite, schema: "public" | "detailing") {
 }
 
 describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", () => {
+  it("defaults to public, preserves the four original tables and only creates the snapshot", async () => {
+    const db = open(); await seedLegacy(db);
+    const before = await snapshot(db, "public");
+    const oid = (await db.query("SELECT 'public.agendamentos'::regclass::oid AS oid")).rows;
+    await runMigrations(poolFor(db));
+    const after = await snapshot(db, "public");
+    for (const table of ["agendamentos", "catalog_items", "site_settings"]) expect(after[table]).toEqual(before[table]);
+    expect((await db.query("SELECT 'public.agendamentos'::regclass::oid AS oid")).rows).toEqual(oid);
+    expect((await db.query("SELECT name FROM public._migrations ORDER BY name")).rows).toEqual([...legacy, "0005_create_catalog_snapshot.sql"].map(name => ({ name })));
+    expect((await db.query("SELECT to_regnamespace('detailing') AS target")).rows).toEqual([{ target: null }]);
+    await db.exec("INSERT INTO public.catalog_snapshot(origem,hash,conteudo) VALUES ('test','hash','{}')");
+    await runMigrations(poolFor(db));
+    expect(await snapshot(db, "public")).toEqual(after);
+    expect((await db.query("SELECT count(*)::int AS count FROM public.catalog_snapshot")).rows).toEqual([{ count: 1 }]);
+  }, 30000);
+  it("can later transfer public snapshots and history to detailing without losing data", async () => {
+    const db = open(); await seedLegacy(db); await runMigrations(poolFor(db));
+    await db.exec("INSERT INTO public.catalog_snapshot(origem,hash,conteudo) VALUES ('test','hash','{\"preserved\":true}')");
+    await expect(migrate(poolFor(db))).rejects.toThrow("AURUM_ADOPTION_REQUIRED");
+    await migrate(poolFor(db), { adoptPublic: true });
+    expect((await db.query("SELECT conteudo FROM detailing.catalog_snapshot")).rows).toEqual([{ conteudo: { preserved: true } }]);
+    await expect(runMigrations(poolFor(db))).rejects.toThrow("AURUM_SCHEMA_SWITCH_REQUIRES_TRANSFER");
+    expect((await db.query("SELECT to_regclass('public.catalog_snapshot') AS target")).rows).toEqual([{ target: null }]);
+    await db.exec("INSERT INTO detailing.catalog_snapshot(origem,hash,conteudo) VALUES ('test','second','{}')");
+  }, 30000);
+  it("creates fresh catalogs in a configured schema and validates identifiers", async () => {
+    const db = open(); await runMigrations(poolFor(db), { schema: "aurum_test" });
+    expect((await db.query("SELECT count(*)::int AS count FROM aurum_test._migrations")).rows).toEqual([{ count: 4 }]);
+    expect((await db.query("SELECT to_regclass('public.catalog_snapshot') AS target")).rows).toEqual([{ target: null }]);
+    expect(getDbSchema()).toBe("public"); expect(quotedDbSchema("detailing")).toBe('"detailing"');
+    for (const invalid of ["", "a;DROP SCHEMA public", "public,financeiro", "pg_catalog", "information_schema", "with space", "A".repeat(64)]) {
+      expect(() => getDbSchema(invalid)).toThrow("AURUM_INVALID_DB_SCHEMA");
+    }
+    await expect(runMigrations(poolFor(db), { adoptPublic: true, schema: "public" })).rejects.toThrow("AURUM_ADOPTION_REQUIRES_DETAILING");
+  }, 30000);
   it("moves all four tables with identical data/OIDs, preserves financial tables and reruns safely", async () => {
     const db = open(); await seedLegacy(db);
     const before = await snapshot(db, "public");
@@ -71,6 +108,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
     await migrate(pool);
     expect(await snapshot(db, "detailing")).toEqual(after);
     await db.exec(read("migrations/0004_move_to_detailing.sql"));
+    await db.exec('SET search_path TO detailing, pg_catalog');
     await db.exec(read("migrations/0005_create_catalog_snapshot.sql"));
     expect(await snapshot(db, "detailing")).toEqual(after);
     expect(pool.release).toHaveBeenCalledWith(true);
@@ -124,7 +162,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
     await db.exec("INSERT INTO detailing.catalog_snapshot(origem,hash,conteudo) VALUES ('test','hash','{}')");
     await db.exec(read("ops/rollback_to_public.sql"));
     expect(await snapshot(db, "public")).toEqual(before);
-    expect((await db.query("SELECT count(*)::integer AS count FROM detailing.catalog_snapshot")).rows).toEqual([{ count: 1 }]);
+    expect((await db.query("SELECT count(*)::integer AS count FROM public.catalog_snapshot")).rows).toEqual([{ count: 1 }]);
     await migrate(poolFor(db), { adoptPublic: true });
     expect(await snapshot(db, "detailing")).toEqual(before);
   }, 30000);
@@ -150,7 +188,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
     const db = open(); await seedLegacy(db);
     const pool = poolFor(db), original = pool.query.getMockImplementation()!;
     pool.query.mockImplementation(async (sql: string, values?: unknown[]) => {
-      if (sql.startsWith("INSERT INTO detailing._migrations") && values?.[0] === "0005_create_catalog_snapshot.sql") throw new Error("stamp failure");
+      if (sql.startsWith('INSERT INTO "detailing"._migrations') && values?.[0] === "0005_create_catalog_snapshot.sql") throw new Error("stamp failure");
       return original(sql, values);
     });
     await expect(migrate(pool, { adoptPublic: true })).rejects.toThrow("stamp failure");

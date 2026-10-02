@@ -1,4 +1,4 @@
-import { getPool } from "@/lib/db";
+import { getPool, quotedDbSchema } from "@/lib/db";
 import { Service, ServiceCategoryId, VehicleType } from "@/types";
 import { services as factoryServices } from "@/lib/data/services";
 
@@ -56,7 +56,7 @@ async function ensureFactoryCatalog(): Promise<void> {
       ? { fixed: service.fixedPrice }
       : { starting_at: service.startingPrice ?? 0 });
     await pool.query(
-      `INSERT INTO detailing.catalog_items
+      `INSERT INTO ${quotedDbSchema()}.catalog_items
        (source_id, nome, descricao_curta, descricao, categoria, subcategoria, veiculo_tipo, precos, includes, foto, ativo, service_data, variantes, opcoes_preco)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,$11,$12,$13)
        ON CONFLICT (source_id) DO NOTHING`,
@@ -146,7 +146,7 @@ export async function createCatalogItem(raw: CatalogItemInput): Promise<CatalogI
   const input = validate(raw);
   const pool = getPool();
   const result = await pool.query(
-    `INSERT INTO detailing.catalog_items
+    `INSERT INTO ${quotedDbSchema()}.catalog_items
       (nome, descricao_curta, descricao, categoria, subcategoria, veiculo_tipo, precos, includes, foto, promocao_inicio, promocao_fim, ativo, service_data, variantes, opcoes_preco)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
      RETURNING *`,
@@ -178,7 +178,7 @@ export async function updateCatalogItem(
   const input = validate(raw);
   const pool = getPool();
   const result = await pool.query(
-    `UPDATE detailing.catalog_items SET
+    `UPDATE ${quotedDbSchema()}.catalog_items SET
       nome = $2, descricao_curta = $3, descricao = $4, categoria = $5,
       subcategoria = $6, veiculo_tipo = $7, precos = $8, includes = $9,
       foto = $10, promocao_inicio = $11, promocao_fim = $12, ativo = $13,
@@ -212,11 +212,11 @@ export async function updateCatalogItem(
 export async function deleteCatalogItem(id: string): Promise<void> {
   const pool = getPool();
   const result = await pool.query(
-    `UPDATE detailing.catalog_items SET ativo = false, atualizado_em = now() WHERE source_id = $1`,
+    `UPDATE ${quotedDbSchema()}.catalog_items SET ativo = false, atualizado_em = now() WHERE source_id = $1`,
     [id]
   );
   if (!result.rowCount) {
-    await pool.query(`DELETE FROM detailing.catalog_items WHERE id::text = $1`, [id]);
+    await pool.query(`DELETE FROM ${quotedDbSchema()}.catalog_items WHERE id::text = $1`, [id]);
   }
 }
 
@@ -224,7 +224,7 @@ export async function deleteCatalogItem(id: string): Promise<void> {
 export async function listAllCatalogItems(): Promise<CatalogItem[]> {
   await ensureFactoryCatalog();
   const pool = getPool();
-  const result = await pool.query(`SELECT * FROM detailing.catalog_items ORDER BY criado_em DESC`);
+  const result = await pool.query(`SELECT * FROM ${quotedDbSchema()}.catalog_items ORDER BY criado_em DESC`);
   return result.rows.map(mapRow);
 }
 
@@ -234,7 +234,7 @@ export async function listPublicCatalogItems(): Promise<CatalogItem[]> {
   await ensureFactoryCatalog();
   const pool = getPool();
   const result = await pool.query(
-    `SELECT * FROM detailing.catalog_items
+    `SELECT * FROM ${quotedDbSchema()}.catalog_items
      WHERE ativo = true
        AND (
          (promocao_inicio IS NULL AND promocao_fim IS NULL)
@@ -247,7 +247,7 @@ export async function listPublicCatalogItems(): Promise<CatalogItem[]> {
 
 export async function listManagedCatalogIds(): Promise<string[]> {
   await ensureFactoryCatalog();
-  const { rows } = await getPool().query(`SELECT COALESCE(source_id, id::text) AS id FROM detailing.catalog_items`);
+  const { rows } = await getPool().query(`SELECT COALESCE(source_id, id::text) AS id FROM ${quotedDbSchema()}.catalog_items`);
   return rows.map((row: { id: string }) => row.id);
 }
 

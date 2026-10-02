@@ -1,4 +1,6 @@
 import { Pool } from "pg";
+import { getDbSchema, quotedDbSchema } from "../db/schema";
+export { quotedDbSchema };
 
 // Server-only: este módulo nunca deve ser importado por um componente
 // "use client" — só por Route Handlers / código de servidor (ver
@@ -18,7 +20,7 @@ export function getPool(): Pool {
     }
     global.__aurumPgPool = new Pool({
       connectionString,
-      options: "-c search_path=detailing,pg_catalog",
+      options: `-c search_path=${getDbSchema()},pg_catalog`,
       connectionTimeoutMillis: 5000,
       statement_timeout: 15000,
     });
