@@ -10,9 +10,11 @@ import {
   Sparkles,
   Settings,
   ArrowLeft,
+  ExternalLink,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
+import type { AdminExternalLinks } from "@/lib/admin-external-links";
 
 const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -23,8 +25,16 @@ const links = [
   { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ];
 
-export function AdminNav() {
+export function AdminNav({ externalLinks }: { externalLinks: AdminExternalLinks }) {
   const pathname = usePathname();
+  const shortcuts = [
+    ...(externalLinks.spreadsheetUrl
+      ? [{ href: externalLinks.spreadsheetUrl, label: "Planilha de serviços" }]
+      : []),
+    ...(externalLinks.financeiroUrl
+      ? [{ href: externalLinks.financeiroUrl, label: "Financeiro e agenda" }]
+      : []),
+  ];
 
   return (
     <>
@@ -54,6 +64,18 @@ export function AdminNav() {
               </Link>
             );
           })}
+          {shortcuts.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground"
+            >
+              <ExternalLink size={17} />
+              {link.label}
+            </a>
+          ))}
         </nav>
         <div className="mt-4 border-t border-border p-3">
           <Link
@@ -85,6 +107,17 @@ export function AdminNav() {
             </Link>
           );
         })}
+        {shortcuts.map((link) => (
+          <a
+            key={link.label}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium text-muted"
+          >
+            {link.label}
+          </a>
+        ))}
       </nav>
     </>
   );
