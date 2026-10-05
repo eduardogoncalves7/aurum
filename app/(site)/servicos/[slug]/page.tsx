@@ -84,7 +84,7 @@ export default async function ServiceDetailPage({
       )}
 
       {/* Preços por porte/carroceria */}
-      {service.prices && (
+      {service.prices && service.pricingType === "vehicle_category" && (
         <section className="mt-10">
           <h2 className="font-display text-lg font-bold text-foreground">
             Preços
@@ -194,7 +194,7 @@ export default async function ServiceDetailPage({
         </section>
       )}
 
-      {service.includes && (
+      {service.includes && service.includes.length > 0 && (
         <section className="mt-10">
           <h2 className="font-display text-lg font-bold text-foreground">
             O que está incluído

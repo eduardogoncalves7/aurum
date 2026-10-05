@@ -427,6 +427,7 @@ export function BookingChat() {
             {vehicle?.type === "car" && (
               <HigienizacaoGroupCard
                 vehicle={vehicle}
+                dbServices={dbServices}
                 selectedServiceIds={selectedServiceIds}
                 onToggle={toggleService}
               />

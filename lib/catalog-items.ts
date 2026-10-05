@@ -268,6 +268,8 @@ export function catalogItemToService(item: CatalogItem): Service {
       shortDescription: item.descricaoCurta,
       description: item.descricao ?? undefined,
       image: item.foto ?? item.detalhes.image,
+      fixedPrice: item.precos.fixed ?? item.detalhes.fixedPrice,
+      startingPrice: item.precos.starting_at ?? item.detalhes.startingPrice,
       prices: item.precos,
       variants: item.variantes?.length ? item.variantes : item.detalhes.variants,
       priceBreakdown: item.detalhes.priceBreakdown,

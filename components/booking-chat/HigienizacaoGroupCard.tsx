@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, ChevronDown, Plus } from "lucide-react";
-import { Vehicle } from "@/types";
+import { Service, Vehicle } from "@/types";
 import { getServiceById, higienizacaoServiceIds } from "@/lib/data/services";
 import { calculateServicePrice } from "@/lib/pricing";
 import { formatCurrency } from "@/lib/formatters";
@@ -11,15 +11,16 @@ import { cn } from "@/lib/utils";
 
 interface Props {
   vehicle: Vehicle | null;
+  dbServices: Service[];
   selectedServiceIds: string[];
   onToggle: (serviceId: string) => void;
 }
 
-export function HigienizacaoGroupCard({ vehicle, selectedServiceIds, onToggle }: Props) {
+export function HigienizacaoGroupCard({ vehicle, dbServices, selectedServiceIds, onToggle }: Props) {
   const [open, setOpen] = useState(false);
 
   const options = higienizacaoServiceIds
-    .map((id) => getServiceById(id))
+    .map((id) => getServiceById(id, dbServices))
     .filter((s): s is NonNullable<typeof s> => !!s);
 
   const selectedCount = options.filter((s) =>

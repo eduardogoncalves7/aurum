@@ -498,7 +498,7 @@ export const services: Service[] = [
       "Desmontagem das carenagens, dos bancos e do pião para um detalhamento completo: tanque, carenagens, motor, chassi, plásticos e borrachas.",
     pricingType: "starting_at",
     vehicleDimension: "motorcycle",
-    startingPrice: 300,
+    startingPrice: 250,
     includes: [
       "Limpeza detalhada de toda a motocicleta",
       "Lavagem da pintura",
@@ -527,7 +527,7 @@ export const services: Service[] = [
     shortDescription: "Limpeza do forro de teto e das colunas internas.",
     pricingType: "fixed",
     vehicleDimension: "none",
-    fixedPrice: 200,
+    fixedPrice: 120,
   },
   {
     id: "higienizacao-ar",
@@ -558,7 +558,7 @@ export const services: Service[] = [
     shortDescription: "Limpeza profunda de bancos e forros das portas.",
     pricingType: "fixed",
     vehicleDimension: "none",
-    fixedPrice: 350,
+    fixedPrice: 300,
   },
   {
     id: "higienizacao-completa",
