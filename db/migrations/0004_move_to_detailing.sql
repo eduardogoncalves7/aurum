@@ -7,6 +7,7 @@ DECLARE
   existing_target integer := 0;
   actual_columns text[];
   expected_columns text[];
+  actual_history text[];
   before_count bigint;
   after_count bigint;
 BEGIN
@@ -55,13 +56,42 @@ BEGIN
       END;
       SELECT array_agg(value ORDER BY value) INTO expected_columns FROM unnest(expected_columns) AS value;
       IF actual_columns IS DISTINCT FROM expected_columns THEN
-        RAISE EXCEPTION 'AURUM_SOURCE_SHAPE: legacy columns do not match this project';
+        IF relation_name = 'catalog_items' THEN
+          expected_columns := expected_columns || ARRAY[
+            'slug:text','tipo_preco:text','beneficios:text[]','brinde:text[]','fotos:text[]',
+            'visivel_catalogo:boolean','destaque:boolean','ordem:integer','precos_promocionais:jsonb'
+          ];
+          SELECT array_agg(value ORDER BY value) INTO expected_columns FROM unnest(expected_columns) AS value;
+          IF actual_columns IS DISTINCT FROM expected_columns THEN
+            expected_columns := expected_columns || ARRAY['promocao_sem_data:boolean'];
+            SELECT array_agg(value ORDER BY value) INTO expected_columns FROM unnest(expected_columns) AS value;
+          END IF;
+        END IF;
+        IF actual_columns IS DISTINCT FROM expected_columns THEN
+          RAISE EXCEPTION 'AURUM_SOURCE_SHAPE: legacy columns do not match this project';
+        END IF;
       END IF;
     END LOOP;
-    IF (SELECT array_agg(name ORDER BY name) FROM public._migrations
-        WHERE name NOT IN ('0004_move_to_detailing.sql', '0005_create_catalog_snapshot.sql')) IS DISTINCT FROM
-        ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql'] THEN
+    SELECT array_agg(name ORDER BY name) INTO actual_history FROM public._migrations
+      WHERE name NOT IN ('0004_move_to_detailing.sql');
+    IF actual_history IS DISTINCT FROM ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql']
+      AND actual_history IS DISTINCT FROM ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql','0005_create_catalog_snapshot.sql']
+      AND actual_history IS DISTINCT FROM ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql','0005_create_catalog_snapshot.sql','0006_canonical_catalog.sql'] THEN
       RAISE EXCEPTION 'AURUM_SOURCE_HISTORY: legacy history does not match this project';
+    END IF;
+    IF pg_catalog.to_regclass('public.catalog_categories') IS NOT NULL THEN
+      IF pg_catalog.to_regclass('detailing.catalog_categories') IS NOT NULL THEN
+        RAISE EXCEPTION 'AURUM_TARGET_CONFLICT: catalog_categories exists in both schemas';
+      END IF;
+      LOCK TABLE public.catalog_categories IN ACCESS EXCLUSIVE MODE;
+      tables := array_append(tables, 'catalog_categories');
+    END IF;
+    IF pg_catalog.to_regclass('public.catalog_item_history') IS NOT NULL THEN
+      IF pg_catalog.to_regclass('detailing.catalog_item_history') IS NOT NULL THEN
+        RAISE EXCEPTION 'AURUM_TARGET_CONFLICT: catalog_item_history exists in both schemas';
+      END IF;
+      LOCK TABLE public.catalog_item_history IN ACCESS EXCLUSIVE MODE;
+      tables := array_append(tables, 'catalog_item_history');
     END IF;
   END IF;
   -- A later optional transfer must also carry snapshots created in public.

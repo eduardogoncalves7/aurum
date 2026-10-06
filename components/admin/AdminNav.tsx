@@ -28,9 +28,6 @@ const links = [
 export function AdminNav({ externalLinks }: { externalLinks: AdminExternalLinks }) {
   const pathname = usePathname();
   const shortcuts = [
-    ...(externalLinks.spreadsheetUrl
-      ? [{ href: externalLinks.spreadsheetUrl, label: "Planilha de serviços" }]
-      : []),
     ...(externalLinks.financeiroUrl
       ? [{ href: externalLinks.financeiroUrl, label: "Financeiro e agenda" }]
       : []),

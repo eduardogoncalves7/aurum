@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { CatalogItemForm } from "@/components/admin/CatalogItemForm";
 
 function isPromotion(item: CatalogItem) {
-  return !!(item.promocaoInicio && item.promocaoFim);
+  return !!item.promocaoSemData || !!(item.promocaoInicio && item.promocaoFim);
 }
 
 export default function AdminServicesPage() {
@@ -58,6 +58,7 @@ export default function AdminServicesPage() {
           <CatalogItemForm
             variant="service"
             initialItem={editing === "new" ? undefined : editing}
+            existingSubcategories={items.map((item) => item.subcategoria ?? "").filter(Boolean)}
             onCancel={() => setEditing(null)}
             onSaved={() => {
               setEditing(null);

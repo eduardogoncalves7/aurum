@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   CatalogItemInput,
   ValidationError,
@@ -20,6 +21,8 @@ export async function PATCH(
 
   try {
     const item = await updateCatalogItem(id, body);
+    revalidatePath("/servicos");
+    revalidatePath(`/servicos/${encodeURIComponent(item.id)}`);
     return NextResponse.json({ item });
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -37,6 +40,8 @@ export async function DELETE(
   const { id } = await params;
   try {
     await deleteCatalogItem(id);
+    revalidatePath("/servicos");
+    revalidatePath(`/servicos/${encodeURIComponent(id)}`);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Erro ao apagar item de catálogo:", error);

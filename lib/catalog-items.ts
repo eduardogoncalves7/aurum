@@ -34,6 +34,7 @@ export interface CatalogItemInput {
   foto?: string | null;
   promocaoInicio?: string | null; // 'YYYY-MM-DD'
   promocaoFim?: string | null;
+  promocaoSemData?: boolean;
   ativo?: boolean;
   variantes?: NonNullable<Service["variants"]>;
   detalhes?: Partial<Service>;
@@ -95,7 +96,11 @@ function validate(input: CatalogItemInput): CatalogItemInput {
 
   const promocaoInicio = input.promocaoInicio || null;
   const promocaoFim = input.promocaoFim || null;
-  if ((promocaoInicio && !promocaoFim) || (!promocaoInicio && promocaoFim)) {
+  const promocaoSemData = input.promocaoSemData ?? false;
+  if (promocaoSemData && (promocaoInicio || promocaoFim)) {
+    throw new ValidationError("Promoção sem prazo não pode ter datas.");
+  }
+  if (!promocaoSemData && ((promocaoInicio && !promocaoFim) || (!promocaoInicio && promocaoFim))) {
     throw new ValidationError("Informe início e fim da promoção, ou deixe os dois em branco.");
   }
   if (promocaoInicio && promocaoFim) {
@@ -105,7 +110,7 @@ function validate(input: CatalogItemInput): CatalogItemInput {
     for (const date of [promocaoInicio, promocaoFim]) {
       const parsed = new Date(`${date}T00:00:00.000Z`);
       if (Number.isNaN(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== date) {
-        throw new ValidationError("Informe datas validas no formato dd/mm/aaaa.");
+        throw new ValidationError("Confira as datas de início e fim da promoção.");
       }
     }
     if (promocaoFim < promocaoInicio) {
@@ -136,6 +141,7 @@ function validate(input: CatalogItemInput): CatalogItemInput {
     foto,
     promocaoInicio,
     promocaoFim,
+    promocaoSemData,
     ativo: input.ativo ?? true,
     variantes: input.variantes ?? [],
     detalhes: input.detalhes ?? {},
@@ -147,8 +153,8 @@ export async function createCatalogItem(raw: CatalogItemInput): Promise<CatalogI
   const pool = getPool();
   const result = await pool.query(
     `INSERT INTO ${quotedDbSchema()}.catalog_items
-      (nome, descricao_curta, descricao, categoria, subcategoria, veiculo_tipo, precos, includes, foto, promocao_inicio, promocao_fim, ativo, service_data, variantes, opcoes_preco)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+      (nome, descricao_curta, descricao, categoria, subcategoria, veiculo_tipo, precos, includes, foto, promocao_inicio, promocao_fim, promocao_sem_data, ativo, service_data, variantes, opcoes_preco)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
      RETURNING *`,
     [
       input.nome,
@@ -162,6 +168,7 @@ export async function createCatalogItem(raw: CatalogItemInput): Promise<CatalogI
       input.foto,
       input.promocaoInicio,
       input.promocaoFim,
+      input.promocaoSemData,
       input.ativo,
       JSON.stringify(input.detalhes ?? {}),
       JSON.stringify(input.variantes ?? []),
@@ -181,8 +188,8 @@ export async function updateCatalogItem(
     `UPDATE ${quotedDbSchema()}.catalog_items SET
       nome = $2, descricao_curta = $3, descricao = $4, categoria = $5,
       subcategoria = $6, veiculo_tipo = $7, precos = $8, includes = $9,
-      foto = $10, promocao_inicio = $11, promocao_fim = $12, ativo = $13,
-      service_data = $14, variantes = $15, opcoes_preco = $16,
+      foto = $10, promocao_inicio = $11, promocao_fim = $12, promocao_sem_data = $13, ativo = $14,
+      service_data = $15, variantes = $16, opcoes_preco = $17,
       atualizado_em = now()
      WHERE COALESCE(source_id, id::text) = $1
      RETURNING *`,
@@ -199,6 +206,7 @@ export async function updateCatalogItem(
       input.foto,
       input.promocaoInicio,
       input.promocaoFim,
+      input.promocaoSemData,
       input.ativo,
       JSON.stringify(input.detalhes ?? {}),
       JSON.stringify(input.variantes ?? []),
@@ -252,7 +260,7 @@ export async function listManagedCatalogIds(): Promise<string[]> {
 }
 
 export function isPromotion(item: CatalogItem): boolean {
-  return !!(item.promocaoInicio && item.promocaoFim);
+  return !!item.promocaoSemData || !!(item.promocaoInicio && item.promocaoFim);
 }
 
 /** Converte um CatalogItem (banco) pro formato Service que o resto do site
@@ -308,6 +316,7 @@ interface CatalogItemRow {
   foto: string | null;
   promocao_inicio: string | null;
   promocao_fim: string | null;
+  promocao_sem_data: boolean;
   ativo: boolean;
   criado_em: string | Date;
   atualizado_em: string | Date;
@@ -330,6 +339,7 @@ function mapRow(row: CatalogItemRow): CatalogItem {
     foto: row.foto,
     promocaoInicio: row.promocao_inicio,
     promocaoFim: row.promocao_fim,
+    promocaoSemData: row.promocao_sem_data,
     ativo: row.ativo,
     detalhes: row.service_data,
     variantes: row.variantes,

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { CatalogItemForm } from "@/components/admin/CatalogItemForm";
 
 function isPromotion(item: CatalogItem) {
-  return !!(item.promocaoInicio && item.promocaoFim);
+  return !!item.promocaoSemData || !!(item.promocaoInicio && item.promocaoFim);
 }
 
 function statusOf(item: CatalogItem): { label: string; tone: "gold" | "neutral" | "warning" } {
@@ -32,11 +32,12 @@ export default function AdminPromotionsPage() {
         if (!res.ok) throw new Error("Falha ao carregar");
         return res.json();
       })
-      .then((data: { items: CatalogItem[] }) => setItems((data.items ?? []).filter(isPromotion)))
+      .then((data: { items: CatalogItem[] }) => setItems(data.items ?? []))
       .catch(() => setLoadError(true));
   }
 
   useEffect(reload, []);
+  const promotions = items.filter(isPromotion);
 
   async function handleDelete(id: string) {
     if (!confirm("Apagar esta promoção? Não dá pra desfazer.")) return;
@@ -66,6 +67,7 @@ export default function AdminPromotionsPage() {
           <CatalogItemForm
             variant="promotion"
             initialItem={editing === "new" ? undefined : editing}
+            existingSubcategories={items.map((item) => item.subcategoria ?? "").filter(Boolean)}
             onCancel={() => setEditing(null)}
             onSaved={() => {
               setEditing(null);
@@ -82,10 +84,10 @@ export default function AdminPromotionsPage() {
       )}
 
       <div className="mt-6 flex flex-col gap-2">
-        {items.length === 0 && editing === null && (
+        {promotions.length === 0 && editing === null && (
           <p className="text-sm text-muted-dark">Nenhuma promoção criada ainda.</p>
         )}
-        {items.map((item) => {
+        {promotions.map((item) => {
           const status = statusOf(item);
           const priceValues = Object.values(item.precos);
           return (
@@ -100,7 +102,7 @@ export default function AdminPromotionsPage() {
                   {priceValues.length > 0 && ` · a partir de ${formatCurrency(Math.min(...priceValues))}`}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-dark">
-                  {formatDatePtBr(item.promocaoInicio!)} até {formatDatePtBr(item.promocaoFim!)}
+                  {item.promocaoSemData ? "Sem prazo · fica ativa até desativar manualmente" : `${formatDatePtBr(item.promocaoInicio!)} até ${formatDatePtBr(item.promocaoFim!)}`}
                 </p>
               </div>
               <div className="flex items-center gap-2">

@@ -39,6 +39,14 @@ async function migrate(pool, { adoptPublic = false, schema = getDbSchema(), migr
   if (adoptPublic && schema !== "detailing") throw new Error("AURUM_ADOPTION_REQUIRES_DETAILING");
   const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith(".sql")).sort();
   const client = await pool.connect();
+  if (typeof client.on === "function") {
+    client.on("notice", notice => {
+      const message = String(notice?.message ?? "");
+      if (/^AURUM_CATALOG_BACKFILL before=\d+ after=\d+ canonical_missing_before=\d+ canonical_missing_after=0 test_promotions_disabled=\d+$/.test(message)) {
+        console.log(message);
+      }
+    });
+  }
   try {
     // Dedicated connection and a nonblocking session lock across all files.
     const { rows: lock } = await client.query("SELECT pg_try_advisory_lock(16777241, 41004) AS acquired");

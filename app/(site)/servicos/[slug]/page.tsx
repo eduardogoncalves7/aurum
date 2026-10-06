@@ -72,9 +72,6 @@ export default async function ServiceDetailPage({
             {formatCurrency(value)}
           </p>
         </div>
-        <Link href={ctaHref}>
-          <Button size="lg">Adicionar ao orçamento</Button>
-        </Link>
       </div>
 
       {service.note && (

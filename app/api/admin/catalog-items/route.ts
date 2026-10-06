@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   CatalogItemInput,
   ValidationError,
@@ -27,6 +28,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const item = await createCatalogItem(body);
+    revalidatePath("/servicos");
+    revalidatePath(`/servicos/${encodeURIComponent(item.id)}`);
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {
     if (error instanceof ValidationError) {

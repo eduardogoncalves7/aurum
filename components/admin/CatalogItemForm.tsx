@@ -18,15 +18,6 @@ const BODY_PRICE_FIELDS = [
   { key: "hatch_sedan", label: "Hatch / Sedan (R$)" }, { key: "suv", label: "SUV (R$)" }, { key: "pickup", label: "Caminhonete (R$)" },
 ];
 
-function toDisplayDate(value?: string | null) {
-  return value ? value.split("-").reverse().join("/") : "";
-}
-
-function toIsoDate(value: string) {
-  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  return match ? `${match[3]}-${match[2]}-${match[1]}` : "";
-}
-
 interface FormState {
   nome: string;
   descricaoCurta: string;
@@ -39,6 +30,7 @@ interface FormState {
   foto: string | null;
   promocaoInicio: string;
   promocaoFim: string;
+  promocaoSemData: boolean;
   ativo: boolean;
   variantes: { id: string; label: string; prices: Record<string, string>; gift: string[] }[];
   pricingType: PricingType;
@@ -58,8 +50,9 @@ function toFormState(item?: CatalogItem): FormState {
     ),
     includes: item?.includes?.length ? item.includes : [""],
     foto: item?.foto ?? null,
-    promocaoInicio: toDisplayDate(item?.promocaoInicio),
-    promocaoFim: toDisplayDate(item?.promocaoFim),
+    promocaoInicio: item?.promocaoInicio ?? "",
+    promocaoFim: item?.promocaoFim ?? "",
+    promocaoSemData: item?.promocaoSemData ?? false,
     ativo: item?.ativo ?? true,
     variantes: (item?.variantes ?? []).map((v) => ({
       id: v.id, label: v.label, gift: v.gift ?? [],
@@ -73,11 +66,13 @@ function toFormState(item?: CatalogItem): FormState {
 export function CatalogItemForm({
   variant,
   initialItem,
+  existingSubcategories,
   onSaved,
   onCancel,
 }: {
   variant: "service" | "promotion";
   initialItem?: CatalogItem;
+  existingSubcategories: string[];
   onSaved: () => void;
   onCancel: () => void;
 }) {
@@ -114,8 +109,8 @@ export function CatalogItemForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (variant === "promotion" && (!toIsoDate(form.promocaoInicio) || !toIsoDate(form.promocaoFim))) {
-      setError("Informe as duas datas válidas no formato dd/mm/aaaa.");
+    if (variant === "promotion" && !form.promocaoSemData && (!form.promocaoInicio || !form.promocaoFim)) {
+      setError("Escolha as datas de início e fim ou marque a opção sem prazo.");
       return;
     }
     setSaving(true);
@@ -138,8 +133,9 @@ export function CatalogItemForm({
       precos,
       includes: form.includes.map((i) => i.trim()).filter(Boolean),
       foto: form.foto,
-      promocaoInicio: variant === "promotion" ? toIsoDate(form.promocaoInicio) || null : null,
-      promocaoFim: variant === "promotion" ? toIsoDate(form.promocaoFim) || null : null,
+      promocaoInicio: variant === "promotion" && !form.promocaoSemData ? form.promocaoInicio || null : null,
+      promocaoFim: variant === "promotion" && !form.promocaoSemData ? form.promocaoFim || null : null,
+      promocaoSemData: variant === "promotion" && form.promocaoSemData,
       ativo: form.ativo,
       variantes: form.variantes.map((v) => ({
         id: v.id || v.label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
@@ -212,12 +208,19 @@ export function CatalogItemForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input
-          label="Subcategoria (opcional)"
-          value={form.subcategoria}
-          maxLength={60}
-          onChange={(e) => setForm((f) => ({ ...f, subcategoria: e.target.value }))}
-        />
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-muted">Subcategoria existente (opcional)</label>
+          <select
+            value={form.subcategoria}
+            onChange={(e) => setForm((f) => ({ ...f, subcategoria: e.target.value }))}
+            className="h-12 w-full rounded-lg border border-border bg-background-elevated px-4 text-foreground"
+          >
+            <option value="">Sem subcategoria</option>
+            {Array.from(new Set([...existingSubcategories, form.subcategoria].filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR")).map((subcategory) => (
+              <option key={subcategory} value={subcategory}>{subcategory}</option>
+            ))}
+          </select>
+        </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-muted">Veículo</label>
           <div className="flex gap-2">
@@ -262,18 +265,25 @@ export function CatalogItemForm({
       <section className="rounded-lg border border-border p-4">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div>
-            <p className="text-sm font-semibold text-foreground">Variantes / subcategorias</p>
-            <p className="text-xs text-muted-dark">Cada opção pode ter preço por porte do veículo.</p>
+            <p className="text-sm font-semibold text-foreground">Opções e preços</p>
+            <p className="text-xs text-muted-dark">Adicione pacotes, como “1 ano” ou “3 anos”, e informe o preço de cada um.</p>
           </div>
           <button type="button" onClick={() => setForm((f) => ({ ...f, variantes: [...f.variantes, { id: "", label: "", prices: {}, gift: [] }] }))} className="flex items-center gap-1 text-xs text-gold"><Plus size={14}/> Adicionar</button>
         </div>
         <div className="flex flex-col gap-3">
           {form.variantes.map((variant, index) => (
-            <div key={index} className="grid gap-2 rounded-lg bg-background-elevated p-3 sm:grid-cols-[1fr_repeat(3,130px)_auto]">
-              <Input label="Nome da opção" value={variant.label} required onChange={(e) => setForm((f) => ({ ...f, variantes: f.variantes.map((v,i) => i === index ? {...v,label:e.target.value} : v) }))}/>
-              <Input label="Brindes (separe por vírgula)" value={variant.gift.join(", ")} onChange={(e) => setForm((f) => ({...f,variantes:f.variantes.map((v,i) => i === index ? {...v,gift:e.target.value.split(",").map((gift) => gift.trim()).filter(Boolean)} : v)}))}/>
-              {(form.veiculoTipo === "car" ? [{key:"small",label:"Pequeno"},{key:"medium",label:"Médio"},{key:"large",label:"Grande"}] : [{key:"motorcycle",label:"Moto"}]).map((field) => <Input key={field.key} label={`${field.label} (R$)`} type="number" min={0} step="0.01" value={variant.prices[field.key] ?? ""} onChange={(e) => setForm((f) => ({...f,variantes:f.variantes.map((v,i) => i === index ? {...v,prices:{...v.prices,[field.key]:e.target.value}} : v)}))}/>) }
-              <button type="button" onClick={() => setForm((f) => ({...f,variantes:f.variantes.filter((_,i) => i !== index)}))} aria-label="Remover variante" className="self-end rounded-lg border border-border p-3 text-muted hover:text-red-400"><Trash2 size={15}/></button>
+            <div key={index} className="rounded-lg bg-background-elevated p-3">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <p className="pt-2 text-sm font-semibold text-foreground">Opção {index + 1}</p>
+                <button type="button" onClick={() => setForm((f) => ({...f,variantes:f.variantes.filter((_,i) => i !== index)}))} aria-label="Remover opção" className="rounded-lg border border-border p-2.5 text-muted hover:text-red-400"><Trash2 size={15}/></button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input label="Nome do pacote (ex.: 1 ano)" value={variant.label} required onChange={(e) => setForm((f) => ({ ...f, variantes: f.variantes.map((v,i) => i === index ? {...v,label:e.target.value} : v) }))}/>
+                <Input label="Brindes (separe por vírgula)" value={variant.gift.join(", ")} onChange={(e) => setForm((f) => ({...f,variantes:f.variantes.map((v,i) => i === index ? {...v,gift:e.target.value.split(",").map((gift) => gift.trim()).filter(Boolean)} : v)}))}/>
+              </div>
+              <div className={`mt-3 grid gap-3 ${form.veiculoTipo === "car" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+                {(form.veiculoTipo === "car" ? [{key:"small",label:"Pequeno"},{key:"medium",label:"Médio"},{key:"large",label:"Grande"}] : [{key:"motorcycle",label:"Moto"}]).map((field) => <Input key={field.key} label={`${field.label} (R$)`} type="number" min={0} step="0.01" value={variant.prices[field.key] ?? ""} onChange={(e) => setForm((f) => ({...f,variantes:f.variantes.map((v,i) => i === index ? {...v,prices:{...v.prices,[field.key]:e.target.value}} : v)}))}/>) }
+              </div>
             </div>
           ))}
         </div>
@@ -368,27 +378,27 @@ export function CatalogItemForm({
       </div>
 
       {variant === "promotion" && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-3">
+          <label className="flex items-start gap-2 text-sm text-muted">
+            <input type="checkbox" checked={form.promocaoSemData} onChange={(e) => setForm((f) => ({ ...f, promocaoSemData: e.target.checked, promocaoInicio: "", promocaoFim: "" }))} />
+            <span><strong className="text-foreground">Sem prazo</strong><br />A promoção fica ativa até ser desativada manualmente.</span>
+          </label>
+          {!form.promocaoSemData && <div className="grid gap-4 sm:grid-cols-2">
           <Input
             label="Início da promoção"
-            type="text"
-            placeholder="dd/mm/aaaa"
-            inputMode="numeric"
-            pattern="\\d{2}/\\d{2}/\\d{4}"
+            type="date"
             required
             value={form.promocaoInicio}
             onChange={(e) => setForm((f) => ({ ...f, promocaoInicio: e.target.value }))}
           />
           <Input
             label="Fim da promoção"
-            type="text"
-            placeholder="dd/mm/aaaa"
-            inputMode="numeric"
-            pattern="\\d{2}/\\d{2}/\\d{4}"
+            type="date"
             required
             value={form.promocaoFim}
             onChange={(e) => setForm((f) => ({ ...f, promocaoFim: e.target.value }))}
           />
+          </div>}
         </div>
       )}
 
