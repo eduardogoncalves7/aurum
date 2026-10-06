@@ -604,7 +604,9 @@ export function getServiceById(id: string, extra: Service[] = []): Service | und
  * Os componentes que exibem a imagem já fazem fallback para um placeholder
  * caso o arquivo não exista. */
 export function getServiceImagePath(service: Service): string {
-  return service.image ?? `/images/services/${service.id}.jpg`;
+  const image = service.image;
+  if (image?.startsWith("/uploads/")) return `/api${image}`;
+  return image ?? `/images/services/${service.id}.jpg`;
 }
 
 /** As 3 opções de Limpeza (carro) — no fluxo de orçamento aparecem

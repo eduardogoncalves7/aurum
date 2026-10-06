@@ -348,7 +348,7 @@ export function CatalogItemForm({
           {form.foto && (
             // eslint-disable-next-line @next/next/no-img-element -- preview de upload recém-feito, não precisa de otimização do next/image
             <img
-              src={form.foto}
+              src={form.foto.startsWith("/uploads/") ? `/api${form.foto}` : form.foto}
               alt=""
               className="h-16 w-16 rounded-lg border border-border object-cover"
             />
