@@ -8,6 +8,7 @@ import { formatCurrency, formatDatePtBr } from "@/lib/formatters";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { CatalogItemForm } from "@/components/admin/CatalogItemForm";
+import { todayInSaoPaulo } from "@/lib/promotion-dates";
 
 function isPromotion(item: CatalogItem) {
   return !!item.promocaoSemData || !!(item.promocaoInicio && item.promocaoFim);
@@ -15,7 +16,7 @@ function isPromotion(item: CatalogItem) {
 
 function statusOf(item: CatalogItem): { label: string; tone: "gold" | "neutral" | "warning" } {
   if (!item.ativo) return { label: "Inativa", tone: "neutral" };
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInSaoPaulo();
   if (item.promocaoFim && item.promocaoFim < today) return { label: "Encerrada", tone: "neutral" };
   if (item.promocaoInicio && item.promocaoInicio > today) return { label: "Agendada", tone: "warning" };
   return { label: "Em vigor", tone: "gold" };

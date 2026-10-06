@@ -7,6 +7,8 @@ import { serviceCategories } from "@/lib/data/categories";
 import { PricingType, ServiceCategoryId, VehicleDimension, VehicleType } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PromotionDateInput } from "@/components/admin/PromotionDateInput";
+import { brazilianDateToIso, isoDateToBrazilian, promotionDateError, todayInSaoPaulo } from "@/lib/promotion-dates";
 
 const MOTO_PRICE_FIELDS: { key: string; label: string }[] = [
   { key: "motorcycle", label: "Moto (R$)" },
@@ -50,8 +52,8 @@ function toFormState(item?: CatalogItem): FormState {
     ),
     includes: item?.includes?.length ? item.includes : [""],
     foto: item?.foto ?? null,
-    promocaoInicio: item?.promocaoInicio ?? "",
-    promocaoFim: item?.promocaoFim ?? "",
+    promocaoInicio: isoDateToBrazilian(item?.promocaoInicio ?? ""),
+    promocaoFim: isoDateToBrazilian(item?.promocaoFim ?? ""),
     promocaoSemData: item?.promocaoSemData ?? false,
     ativo: item?.ativo ?? true,
     variantes: (item?.variantes ?? []).map((v) => ({
@@ -80,6 +82,10 @@ export function CatalogItemForm({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const promotionStart = brazilianDateToIso(form.promocaoInicio);
+  const promotionEnd = brazilianDateToIso(form.promocaoFim);
+  const dateError = variant === "promotion" && !form.promocaoSemData
+    ? promotionDateError(promotionStart ?? "", promotionEnd ?? "") : null;
 
   const priceFields = form.pricingType === "fixed"
     ? [{ key: "fixed", label: "Preço fixo (R$)" }]
@@ -109,8 +115,8 @@ export function CatalogItemForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (variant === "promotion" && !form.promocaoSemData && (!form.promocaoInicio || !form.promocaoFim)) {
-      setError("Escolha as datas de início e fim ou marque a opção sem prazo.");
+    if (dateError) {
+      setError(dateError);
       return;
     }
     setSaving(true);
@@ -133,8 +139,8 @@ export function CatalogItemForm({
       precos,
       includes: form.includes.map((i) => i.trim()).filter(Boolean),
       foto: form.foto,
-      promocaoInicio: variant === "promotion" && !form.promocaoSemData ? form.promocaoInicio || null : null,
-      promocaoFim: variant === "promotion" && !form.promocaoSemData ? form.promocaoFim || null : null,
+      promocaoInicio: variant === "promotion" && !form.promocaoSemData ? promotionStart : null,
+      promocaoFim: variant === "promotion" && !form.promocaoSemData ? promotionEnd : null,
       promocaoSemData: variant === "promotion" && form.promocaoSemData,
       ativo: form.ativo,
       variantes: form.variantes.map((v) => ({
@@ -178,7 +184,7 @@ export function CatalogItemForm({
       className="flex flex-col gap-4 rounded-xl border border-border bg-background-secondary p-5"
     >
       {error && (
-        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>
+        <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -277,9 +283,8 @@ export function CatalogItemForm({
                 <p className="pt-2 text-sm font-semibold text-foreground">Opção {index + 1}</p>
                 <button type="button" onClick={() => setForm((f) => ({...f,variantes:f.variantes.filter((_,i) => i !== index)}))} aria-label="Remover opção" className="rounded-lg border border-border p-2.5 text-muted hover:text-red-400"><Trash2 size={15}/></button>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3">
                 <Input label="Nome do pacote (ex.: 1 ano)" value={variant.label} required onChange={(e) => setForm((f) => ({ ...f, variantes: f.variantes.map((v,i) => i === index ? {...v,label:e.target.value} : v) }))}/>
-                <Input label="Brindes (separe por vírgula)" value={variant.gift.join(", ")} onChange={(e) => setForm((f) => ({...f,variantes:f.variantes.map((v,i) => i === index ? {...v,gift:e.target.value.split(",").map((gift) => gift.trim()).filter(Boolean)} : v)}))}/>
               </div>
               <div className={`mt-3 grid gap-3 ${form.veiculoTipo === "car" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
                 {(form.veiculoTipo === "car" ? [{key:"small",label:"Pequeno"},{key:"medium",label:"Médio"},{key:"large",label:"Grande"}] : [{key:"motorcycle",label:"Moto"}]).map((field) => <Input key={field.key} label={`${field.label} (R$)`} type="number" min={0} step="0.01" value={variant.prices[field.key] ?? ""} onChange={(e) => setForm((f) => ({...f,variantes:f.variantes.map((v,i) => i === index ? {...v,prices:{...v.prices,[field.key]:e.target.value}} : v)}))}/>) }
@@ -384,21 +389,23 @@ export function CatalogItemForm({
             <span><strong className="text-foreground">Sem prazo</strong><br />A promoção fica ativa até ser desativada manualmente.</span>
           </label>
           {!form.promocaoSemData && <div className="grid gap-4 sm:grid-cols-2">
-          <Input
+          <PromotionDateInput
             label="Início da promoção"
-            type="date"
-            required
             value={form.promocaoInicio}
-            onChange={(e) => setForm((f) => ({ ...f, promocaoInicio: e.target.value }))}
+            onChange={(value) => { setError(null); setForm((f) => ({ ...f, promocaoInicio: value })); }}
           />
-          <Input
+          <PromotionDateInput
             label="Fim da promoção"
-            type="date"
-            required
             value={form.promocaoFim}
-            onChange={(e) => setForm((f) => ({ ...f, promocaoFim: e.target.value }))}
+            onChange={(value) => { setError(null); setForm((f) => ({ ...f, promocaoFim: value })); }}
           />
           </div>}
+          {!form.promocaoSemData && form.promocaoInicio && form.promocaoFim && dateError && (
+            <p role="alert" className="text-sm text-red-400">{dateError}</p>
+          )}
+          {!form.promocaoSemData && !dateError && promotionEnd && promotionEnd < todayInSaoPaulo() && (
+            <p className="text-sm text-amber-400">Este período já terminou. Ao salvar, a promoção ficará encerrada. Confira as datas ou escolha Sem prazo.</p>
+          )}
         </div>
       )}
 

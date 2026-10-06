@@ -7,7 +7,7 @@ import { calculateQuoteTotal } from "@/lib/pricing";
 import { vehicleOptions, vehicleSummaryLabel } from "@/lib/vehicle";
 import { buildAppointmentWhatsAppMessage, buildCancelWhatsAppMessage, buildWhatsAppLink, buildWhatsAppMessage } from "@/lib/whatsapp";
 import { clearSession, getSession, setSession } from "@/lib/storage";
-import { getPublicConfig } from "@/lib/config";
+import { usePublicConfig } from "@/lib/use-public-config";
 import { Vehicle, VehicleChatChoice, DeliveryMethod, Service } from "@/types";
 import { formatCurrency, formatDatePtBr, isValidPhone, maskPhone } from "@/lib/formatters";
 
@@ -75,11 +75,7 @@ export function BookingChat() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dbServices, setDbServices] = useState<Service[]>([]);
   const [managedServiceIds, setManagedServiceIds] = useState<string[]>([]);
-  const [config, setConfig] = useState(() => getPublicConfig());
-
-  useEffect(() => {
-    fetch("/api/config").then((res) => res.ok ? res.json() : null).then((value) => { if (value) setConfig(value); }).catch(() => {});
-  }, []);
+  const config = usePublicConfig();
 
   // Itens de catálogo criados no /admin (serviços novos + promoções em
   // vigor) — somam ao catálogo estático em todo o fluxo abaixo.

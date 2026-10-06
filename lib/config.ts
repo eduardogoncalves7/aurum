@@ -1,9 +1,6 @@
-// Config exibida no site e usada nas mensagens de WhatsApp. Não é mais
-// editável pelo /admin (isso vivia no localStorage antes) — agora vem de
-// variáveis de ambiente definidas no deploy. Como este módulo é importado
-// por componentes "use client" (ex: BookingChat), as variáveis PRECISAM ter
-// o prefixo NEXT_PUBLIC_ e estar presentes no momento do `next build`
-// (Docker build), não só em runtime — ver README/.env.example.
+// Valores iniciais enquanto /api/config carrega, e fallback se o banco
+// estiver indisponível. As configurações salvas no /admin têm prioridade.
+// NEXT_PUBLIC_ define os defaults dos componentes cliente durante o build.
 
 export interface PublicConfig {
   whatsappDestination: string; // apenas dígitos, com DDI

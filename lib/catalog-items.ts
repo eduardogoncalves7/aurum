@@ -1,6 +1,7 @@
 import { getPool, quotedDbSchema } from "@/lib/db";
 import { Service, ServiceCategoryId, VehicleType } from "@/types";
 import { services as factoryServices } from "@/lib/data/services";
+import { promotionDateError } from "@/lib/promotion-dates";
 
 // Server-only. Itens criados no /admin (serviços novos e promoções) —
 // somam-se ao catálogo estático de lib/data/services.ts, nunca o
@@ -104,18 +105,8 @@ function validate(input: CatalogItemInput): CatalogItemInput {
     throw new ValidationError("Informe início e fim da promoção, ou deixe os dois em branco.");
   }
   if (promocaoInicio && promocaoFim) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(promocaoInicio) || !/^\d{4}-\d{2}-\d{2}$/.test(promocaoFim)) {
-      throw new ValidationError("Datas de promoção inválidas.");
-    }
-    for (const date of [promocaoInicio, promocaoFim]) {
-      const parsed = new Date(`${date}T00:00:00.000Z`);
-      if (Number.isNaN(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== date) {
-        throw new ValidationError("Confira as datas de início e fim da promoção.");
-      }
-    }
-    if (promocaoFim < promocaoInicio) {
-      throw new ValidationError("A data final da promoção não pode ser antes do início.");
-    }
+    const error = promotionDateError(promocaoInicio, promocaoFim);
+    if (error) throw new ValidationError(error);
   }
 
   const includes = Array.isArray(input.includes)
@@ -246,7 +237,7 @@ export async function listPublicCatalogItems(): Promise<CatalogItem[]> {
      WHERE ativo = true
        AND (
          (promocao_inicio IS NULL AND promocao_fim IS NULL)
-         OR (to_char(CURRENT_DATE, 'YYYY-MM-DD') BETWEEN promocao_inicio AND promocao_fim)
+         OR (to_char(now() AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') BETWEEN promocao_inicio AND promocao_fim)
        )
      ORDER BY criado_em DESC`
   );

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarX, LogOut } from "lucide-react";
 import { clearSession, getSession } from "@/lib/storage";
-import { getPublicConfig } from "@/lib/config";
+import { usePublicConfig } from "@/lib/use-public-config";
 import { vehicleLabelFromAgendamento } from "@/lib/vehicle";
 import { formatCurrency, formatDatePtBr } from "@/lib/formatters";
 import { buildCancelWhatsAppMessage, buildWhatsAppLink } from "@/lib/whatsapp";
@@ -31,10 +31,9 @@ export default function AgendamentosPage() {
   const [session, setSessionState] = useState<{ name: string; phone: string } | null>(null);
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [loadError, setLoadError] = useState(false);
-  const [config, setConfig] = useState(() => getPublicConfig());
+  const config = usePublicConfig();
 
   useEffect(() => {
-    fetch("/api/config").then((res) => res.ok ? res.json() : null).then((value) => { if (value) setConfig(value); }).catch(() => {});
     const s = getSession();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lê localStorage; precisa rodar após a hidratação para não gerar mismatch SSR/cliente
     setSessionState(s);
