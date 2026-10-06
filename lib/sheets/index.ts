@@ -56,11 +56,16 @@ export function createSheetsClient(options: TransportOptions & { env?: Record<st
     if (!parsed.success) throw new SheetsError("RESPONSE");
     return parsed.data.values;
   }
+  function assertWriteEnabled() {
+    if (env.SHEETS_WRITE_ENABLED !== "true") throw new SheetsError("WRITE_DISABLED");
+  }
   async function update(name: string, range: string, values: Cell[][]) {
+    assertWriteEnabled();
     await api(`/values/${encodeURIComponent(`${quote(name)}!${range}`)}?valueInputOption=RAW`, { method: "PUT", body: JSON.stringify({ values }) });
   }
-  async function readServiceRows(): Promise<{ rows: ServiceRow[]; errors: RowError[] }> {
-    const table = await read(await serviceTab(), "A1:ZZ");
+  async function readServiceRows(): Promise<{ sheetName: string; header: string[]; rows: ServiceRow[]; errors: RowError[]; ignored: number }> {
+    const sheetName = await serviceTab();
+    const table = await read(sheetName, "A1:ZZ");
     const names = headers(table[0] ?? [], ["id", "servico"]);
     const rows: ServiceRow[] = [], errors: RowError[] = [];
     const seen = new Set<string>();
@@ -72,9 +77,10 @@ export function createSheetsClient(options: TransportOptions & { env?: Record<st
       else if (seen.has(parsed.data.id)) errors.push({ row: index + 2, code: "INVALID_ROW", fields: ["id"] });
       else { rows.push(parsed.data); seen.add(parsed.data.id); }
     });
-    return { rows, errors };
+    return { sheetName, header: names, rows, errors, ignored: Math.max(0, table.length - 1 - rows.length) };
   }
   async function writeRows(rows: RowInput[], writeOptions: WriteOptions = {}, mustExist = false) {
+    assertWriteEnabled();
     if (!rows.length) return;
     const name = await serviceTab();
     const names = headers((await read(name, "A1:ZZ1"))[0] ?? [], ["id", "servico", "atualizado_em", "atualizado_por"]);
@@ -144,6 +150,7 @@ export function createSheetsClient(options: TransportOptions & { env?: Record<st
   async function appendLog(entry: LogEntry): Promise<void> {
     try {
       await serial(async () => {
+        if (env.SHEETS_WRITE_ENABLED !== "true") return;
         const table = await read("Log_Sync", "A1:ZZ");
         const names = headers(table[0] ?? [], ["data", "origem", "acao", "id", "resultado"]);
         let line = 2;

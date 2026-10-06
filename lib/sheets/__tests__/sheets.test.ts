@@ -6,7 +6,7 @@ import { asRow, fixture, header, sample } from "./fixture";
 
 const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const pem = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
-const env = { GOOGLE_SERVICE_ACCOUNT_EMAIL: "test@example.invalid", GOOGLE_PRIVATE_KEY: `"${pem.replace(/\n/g, "\\\\n")}"`, GOOGLE_SERVICES_SHEET_ID: "test", GOOGLE_SERVICES_SHEET_GID: "1761841708" };
+const env = { GOOGLE_SERVICE_ACCOUNT_EMAIL: "test@example.invalid", GOOGLE_PRIVATE_KEY: `"${pem.replace(/\n/g, "\\\\n")}"`, GOOGLE_SERVICES_SHEET_ID: "test", GOOGLE_SERVICES_SHEET_GID: "1761841708", SHEETS_WRITE_ENABLED: "true" };
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status });
 function setup(table: unknown[][] = fixture()) {
   let title = "servicos_aurum.csv";
@@ -29,6 +29,13 @@ describe("Sheets", () => {
     const { rows, errors } = await setup().client.readServiceRows();
     expect(rows).toHaveLength(51); expect(errors).toEqual([]);
     expect(rows[0].inclusos).toEqual(["A", "B"]);
+  });
+  it("reads the supplied CSV fixture with 51 real service rows and 950 blank false rows", async () => {
+    const fs = await import("node:fs");
+    const fixture = JSON.parse(fs.readFileSync(new URL("./fixtures/services-real.json", import.meta.url), "utf8")) as { header: string[]; rows: string[][] };
+    const { rows, ignored } = await setup([fixture.header, ...fixture.rows]).client.readServiceRows();
+    expect(rows).toHaveLength(51);
+    expect(ignored).toBe(950);
   });
   it("handles reordered columns, short rows and localized prices", async () => {
     const names = [...header].reverse(), table = fixture(names);
@@ -86,6 +93,16 @@ describe("Sheets", () => {
     await client.setActive(sample().id, false);
     const call = mock.mock.calls.find(([url]) => String(url).includes("batchUpdate"))!;
     expect(JSON.parse(String(call[1]?.body)).data.some((cell: { values: unknown[][] }) => cell.values[0][0] === false)).toBe(true);
+  });
+  it("blocks every mutation unless the exact write switch is enabled", async () => {
+    for (const setting of [undefined, "false", "TRUE"]) {
+      const mock = vi.fn(async () => json({}));
+      const blocked = createSheetsClient({ env: { ...env, SHEETS_WRITE_ENABLED: setting }, fetch: mock as typeof fetch });
+      await expect(blocked.upsertRows([{ id: "x", servico: "x" }])).rejects.toMatchObject({ code: "WRITE_DISABLED" });
+      await expect(blocked.setActive("x", false)).rejects.toMatchObject({ code: "WRITE_DISABLED" });
+      await expect(blocked.appendLog({ origem: "test", acao: "write", id: "x", resultado: "ok" })).resolves.toBeUndefined();
+      expect(mock).not.toHaveBeenCalled();
+    }
   });
   it("reads auxiliary tabs with a per-row error report", async () => {
     const { client } = setup([["valor", "chave"], ["SUV", "porte_outro_equivale"], ["invalid", ""]]);

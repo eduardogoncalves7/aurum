@@ -32,7 +32,7 @@ export const serviceRowSchema = z.object({
 export type ServiceRow = z.infer<typeof serviceRowSchema>;
 export type RowInput = { id: string } & Partial<Record<keyof ServiceRow, unknown>>;
 export interface RowError { row: number; fields: string[]; code: "INVALID_ROW" }
-export type ErrorCode = "CONFIG" | "AUTH" | "HTTP" | "TIMEOUT" | "NETWORK" | "RESPONSE" | "SCHEMA" | "NOT_FOUND" | "CONFLICT";
+export type ErrorCode = "CONFIG" | "AUTH" | "HTTP" | "TIMEOUT" | "NETWORK" | "RESPONSE" | "SCHEMA" | "NOT_FOUND" | "CONFLICT" | "WRITE_DISABLED";
 export class SheetsError extends Error {
   constructor(public readonly code: ErrorCode, public readonly status?: number) {
     super(`Sheets: ${code}${status ? ` (${status})` : ""}`);
