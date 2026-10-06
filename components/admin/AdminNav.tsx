@@ -8,7 +8,6 @@ import {
   FileText,
   Wrench,
   Sparkles,
-  Settings,
   ArrowLeft,
   ExternalLink,
 } from "lucide-react";
@@ -22,7 +21,6 @@ const links = [
   { href: "/admin/orcamentos", label: "Agendamentos", icon: FileText },
   { href: "/admin/servicos", label: "Serviços", icon: Wrench },
   { href: "/admin/promocoes", label: "Promoções", icon: Sparkles },
-  { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ];
 
 export function AdminNav({ externalLinks }: { externalLinks: AdminExternalLinks }) {

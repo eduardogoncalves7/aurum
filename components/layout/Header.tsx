@@ -8,14 +8,11 @@ import { InstagramIcon } from "@/components/brand/InstagramIcon";
 import { Button } from "@/components/ui/Button";
 import { getSession } from "@/lib/storage";
 
-import { usePublicConfig } from "@/lib/use-public-config";
-import { getInstagramUrl } from "@/lib/instagram";
+const INSTAGRAM_URL = "https://www.instagram.com/aurum_car.detailing/";
 
 const baseNavLinks = [{ href: "/servicos", label: "Serviços" }];
 
 export function Header() {
-  const config = usePublicConfig();
-  const instagramUrl = getInstagramUrl(config.instagram);
   const [open, setOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
 
@@ -48,15 +45,15 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
-          {instagramUrl && <a
-            href={instagramUrl}
+          <a
+            href={INSTAGRAM_URL}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Instagram da Aurum Detailing"
             className="text-muted transition-colors hover:text-gold"
           >
             <InstagramIcon size={18} />
-          </a>}
+          </a>
           <Link href="/orcamento">
             <Button size="sm">Agendar</Button>
           </Link>
@@ -89,8 +86,8 @@ export function Header() {
             <Link href="/orcamento" onClick={() => setOpen(false)} className="mt-1">
               <Button className="w-full">Agendar</Button>
             </Link>
-            {instagramUrl && <a
-              href={instagramUrl}
+            <a
+              href={INSTAGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setOpen(false)}
@@ -98,7 +95,7 @@ export function Header() {
             >
               <InstagramIcon size={16} />
               Instagram
-            </a>}
+            </a>
           </nav>
         </div>
       )}
