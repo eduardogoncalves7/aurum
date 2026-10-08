@@ -370,7 +370,7 @@ export function CatalogItemForm({
           )}
           <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs text-muted hover:border-gold hover:text-gold-light">
             <Upload size={14} />
-            {uploading ? "Enviando..." : "Escolher foto"}
+            {uploading ? "Otimizando e enviando..." : "Escolher foto"}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -380,6 +380,9 @@ export function CatalogItemForm({
             />
           </label>
         </div>
+        <p className="mt-2 text-xs text-muted">
+          JPG, PNG ou WebP de até 5 MB. A foto é otimizada automaticamente ao enviar.
+        </p>
       </div>
 
       {variant === "promotion" && (

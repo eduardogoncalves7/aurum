@@ -32,6 +32,8 @@ npm run dev
 
 O armazenamento de upload é local ao container. Se executar mais de uma réplica da aplicação, use um volume compartilhado compatível ou migre os uploads para armazenamento de objetos; um volume local por réplica não compartilha os arquivos.
 
+Novas fotos enviadas pelo admin são validadas e convertidas automaticamente para WebP (qualidade 82), com até 1920 pixels em cada dimensão, sem ampliar imagens menores. A proporção, a orientação e a transparência são preservadas; metadados EXIF são removidos. O upload aceita JPG, PNG e WebP de até 5 MB e 40 megapixels, sem animação. Fotos antigas continuam disponíveis no formato original.
+
 ## Desenvolvimento
 
 ```bash

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
+import { optimizeUploadImage } from "@/lib/upload-image";
+
+export const runtime = "nodejs";
 
 // Protegida pelo proxy.ts (matcher /api/admin/:path*). Salva em
 // public/uploads — em produção, esse caminho deve ser o ponto de montagem
@@ -9,9 +12,7 @@ import path from "path";
 // próximo deploy.
 //
 // Nunca confiar no nome de arquivo que o navegador manda: geramos um nome
-// aleatório e escolhemos a extensão a partir do mimetype validado, evitando
-// path traversal (ex: "../../server.js") ou upload de algo que não é
-// imagem disfarçado de .jpg.
+// aleatório. O conteúdo é validado e convertido para WebP antes de salvar.
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -44,12 +45,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Arquivo maior que 5MB." }, { status: 400 });
   }
 
-  const filename = `${randomUUID()}.${extension}`;
+  let buffer: Buffer;
+  try {
+    buffer = await optimizeUploadImage(Buffer.from(await file.arrayBuffer()));
+  } catch {
+    return NextResponse.json(
+      { error: "Imagem inválida. Envie JPG, PNG ou WEBP sem animação e com até 40 megapixels." },
+      { status: 400 }
+    );
+  }
+
+  const filename = `${randomUUID()}.webp`;
   const uploadsDir = path.join(process.cwd(), "public", "uploads");
 
   try {
     await mkdir(uploadsDir, { recursive: true });
-    const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(path.join(uploadsDir, filename), buffer);
   } catch (error) {
     console.error("Erro ao salvar upload:", error);
