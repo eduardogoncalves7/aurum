@@ -34,6 +34,8 @@ O armazenamento de upload é local ao container. Se executar mais de uma réplic
 
 ### Sitemap e buscadores
 
+A prévia de compartilhamento usa a arte institucional em `public/og-image.png`, com metadados Open Graph e Twitter Card no layout principal. A imagem PNG original tem 1731 × 909 pixels. Após publicar, confira a prévia do link; plataformas de compartilhamento podem manter a imagem anterior em cache. Se alterar `SITE_URL`, faça um novo build para atualizar a origem nos metadados das páginas pré-renderizadas.
+
 `/sitemap.xml` lista a página inicial, `/servicos` e os detalhes dos serviços públicos visíveis. A disponibilidade é consultada a cada pedido, usando o mesmo filtro de itens ativos e datas de promoção das páginas públicas. Se o banco estiver indisponível, usa o catálogo de fábrica; um catálogo vazio não ativa esse fallback. As datas de modificação vêm dos registros, sem inventar datas para as páginas estáticas.
 
 O domínio padrão é `https://aurum.melhornegocio.shop`. Para trocar de domínio, configure `SITE_URL` nas variáveis de runtime do Coolify com a origem oficial, sem caminhos, parâmetros ou credenciais.
