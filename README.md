@@ -32,6 +32,14 @@ npm run dev
 
 O armazenamento de upload é local ao container. Se executar mais de uma réplica da aplicação, use um volume compartilhado compatível ou migre os uploads para armazenamento de objetos; um volume local por réplica não compartilha os arquivos.
 
+### Sitemap e buscadores
+
+`/sitemap.xml` lista a página inicial, `/servicos` e os detalhes dos serviços públicos visíveis. A disponibilidade é consultada a cada pedido, usando o mesmo filtro de itens ativos e datas de promoção das páginas públicas. Se o banco estiver indisponível, usa o catálogo de fábrica; um catálogo vazio não ativa esse fallback. As datas de modificação vêm dos registros, sem inventar datas para as páginas estáticas.
+
+O domínio padrão é `https://aurum.melhornegocio.shop`. Para trocar de domínio, configure `SITE_URL` nas variáveis de runtime do Coolify com a origem oficial, sem caminhos, parâmetros ou credenciais.
+
+`/robots.txt` indica o sitemap e orienta buscadores a não rastrear `/admin` e `/api/`; a autenticação do admin continua sendo a proteção de acesso. Orçamento, agendamento e URLs com parâmetros não entram no sitemap. Após o deploy, confira ambos os endereços e envie `/sitemap.xml` no Google Search Console do domínio oficial. A inclusão no sitemap não garante indexação.
+
 Novas fotos enviadas pelo admin são validadas e convertidas automaticamente para WebP (qualidade 82), com até 1920 pixels em cada dimensão, sem ampliar imagens menores. A proporção, a orientação e a transparência são preservadas; metadados EXIF são removidos. O upload aceita JPG, PNG e WebP de até 5 MB e 40 megapixels, sem animação. Fotos antigas continuam disponíveis no formato original.
 
 ## Desenvolvimento
