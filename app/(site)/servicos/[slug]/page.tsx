@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { cache } from "react";
+import { pageMetadata, serviceDescription } from "@/lib/page-metadata";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check, Gift } from "lucide-react";
 import { getServiceById, services } from "@/lib/data/services";
@@ -17,6 +19,25 @@ import { catalogItemToService, listPublicCatalogItems } from "@/lib/catalog-item
 // /admin, sem abrir mão do cache (diferente de force-dynamic).
 export const revalidate = 60;
 
+// Share the same catalog lookup between metadata and rendered content.
+const resolveService = cache(async (slug: string) => {
+  const dbItems = await listPublicCatalogItems().catch(() => null);
+  const dbService = dbItems?.find((item) => item.id === slug);
+  const service = dbService ? catalogItemToService(dbService) : dbItems ? undefined : getServiceById(slug);
+  if (!service) notFound();
+  return service;
+});
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const service = await resolveService(slug);
+  return pageMetadata(
+    service.name,
+    serviceDescription(service.name, service.shortDescription || service.description || "Conheça o serviço e solicite seu agendamento online."),
+    `/servicos/${encodeURIComponent(service.id)}`
+  );
+}
+
 export function generateStaticParams() {
   // Só pré-renderiza o catálogo estático no build. Itens do banco (admin)
   // são resolvidos sob demanda na primeira visita (dynamicParams padrão do
@@ -31,10 +52,7 @@ export default async function ServiceDetailPage({
 }) {
   const { slug } = await params;
 
-  const dbItems = await listPublicCatalogItems().catch(() => null);
-  const dbService = dbItems?.find((i) => i.id === slug);
-  const service = dbService ? catalogItemToService(dbService) : dbItems ? undefined : getServiceById(slug);
-  if (!service) notFound();
+  const service = await resolveService(slug);
 
   const { value, isRange } = getServiceDisplayPrice(service);
   const isEstimateOnly = service.pricingType === "starting_at";

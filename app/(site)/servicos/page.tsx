@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageMetadata } from "@/lib/page-metadata";
 import { ServiceCategories } from "@/components/home/ServiceCategories";
 import { serviceCategories } from "@/lib/data/categories";
 import { services as staticServices } from "@/lib/data/services";
@@ -8,6 +9,12 @@ import { catalogItemToService, isPromotion, listPublicCatalogItems } from "@/lib
 // itens criados depois no /admin (serviços e promoções) só apareceriam no
 // próximo deploy. O tráfego deste site não justifica cache aqui.
 export const dynamic = "force-dynamic";
+
+export const metadata = pageMetadata(
+  "Estética automotiva em Coronel Fabriciano",
+  "Conheça os serviços de estética automotiva da Aurum em Coronel Fabriciano, MG. Veja lavagens, polimento e proteção e solicite seu agendamento online.",
+  "/servicos"
+);
 
 export default async function ServicosPage() {
   // Itens do banco (criados no /admin) somam ao catálogo estático — nunca o
@@ -27,7 +34,7 @@ export default async function ServicosPage() {
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
       <div className="mb-4">
         <h1 className="font-display text-4xl font-black text-foreground">
-          Nossos serviços
+          Serviços de estética automotiva
         </h1>
         <p className="mt-2 max-w-xl text-muted">
           Catálogo completo de detalhamento automotivo. Escolha os serviços e
