@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarX, LogOut } from "lucide-react";
-import { clearSession, getSession } from "@/lib/storage";
+import { clearSession } from "@/lib/storage";
+import { clearBookingAccess } from "@/lib/booking-submit";
 import { usePublicConfig } from "@/lib/use-public-config";
 import { vehicleLabelFromAgendamento } from "@/lib/vehicle";
 import { formatCurrency, formatDatePtBr } from "@/lib/formatters";
@@ -30,23 +31,27 @@ export default function AgendamentosPage() {
   const [checked, setChecked] = useState(false);
   const [session, setSessionState] = useState<{ name: string; phone: string } | null>(null);
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
-  const [loadError, setLoadError] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
   const config = usePublicConfig();
 
   useEffect(() => {
-    const s = getSession();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- lê localStorage; precisa rodar após a hidratação para não gerar mismatch SSR/cliente
-    setSessionState(s);
-    if (s) {
-      fetch(`/api/agendamentos?telefone=${encodeURIComponent(s.phone)}`)
+    const controller = new AbortController();
+    fetch("/api/agendamentos", { cache: "no-store", signal: controller.signal })
         .then((res) => {
+          if (res.status === 401) return { agendamentos: [] };
           if (!res.ok) throw new Error("Falha ao carregar agendamentos");
           return res.json();
         })
-        .then((data) => setAgendamentos(data.agendamentos ?? []))
-        .catch(() => setLoadError(true));
-    }
-    setChecked(true);
+        .then((data) => {
+          if (controller.signal.aborted) return;
+          const records: Agendamento[] = data.agendamentos ?? [];
+          setAgendamentos(records);
+          setSessionState(records.length ? { name: records[0].nome, phone: records[0].telefone } : null);
+        })
+        .catch(() => { if (!controller.signal.aborted) setLoadError("Não foi possível carregar seus agendamentos agora. Tente novamente em instantes."); })
+        .finally(() => { if (!controller.signal.aborted) setChecked(true); });
+    return () => controller.abort();
   }, []);
 
   if (!checked) return null;
@@ -56,15 +61,17 @@ export default function AgendamentosPage() {
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-20 text-center">
         <CalendarX className="text-muted" size={36} strokeWidth={1.5} />
         <h1 className="font-display text-xl font-extrabold text-foreground">
-          Nenhum agendamento encontrado
+          {loadError ? "Histórico indisponível agora" : "Seu histórico neste navegador"}
         </h1>
         <p className="text-sm text-muted">
-          Você ainda não montou nenhum orçamento neste navegador. Comece um
-          agora para ver seu histórico aqui.
+          {loadError
+            ? "Não foi possível consultar seus agendamentos. Tente novamente em instantes."
+            : "Os novos agendamentos feitos neste navegador aparecem aqui. Para consultar registros antigos ou feitos em outro aparelho, fale com a Aurum."}
         </p>
         <Link href="/orcamento">
           <Button size="lg">Montar orçamento</Button>
         </Link>
+        <a href={buildWhatsAppLink(config.whatsappDestination, "Olá, Aurum! Gostaria de consultar meus agendamentos.")} target="_blank" rel="noopener noreferrer" className="text-sm text-gold underline underline-offset-2">Falar com a Aurum</a>
       </div>
     );
   }
@@ -77,30 +84,34 @@ export default function AgendamentosPage() {
             Meus agendamentos
           </h1>
           <p className="mt-1 text-sm text-muted">{session.name} · {session.phone}</p>
-          {/* Nota pra quem mexer aqui: a sessão salva no navegador (nome+
-              telefone) não é autenticação — qualquer um que informe o mesmo
-              telefone no /orcamento acessa o mesmo histórico. Não transformar
-              isso num controle de acesso real. */}
+          <p className="mt-1 text-xs text-muted">Agendamentos feitos neste navegador. Sair encerra o acesso a este histórico.</p>
         </div>
         <button
           type="button"
-          onClick={() => {
-            clearSession();
-            setSessionState(null);
-            setAgendamentos([]);
+          disabled={leaving}
+          onClick={async () => {
+            setLeaving(true);
+            try {
+              await clearBookingAccess();
+              clearSession();
+              setLoadError(null);
+              setSessionState(null);
+              setAgendamentos([]);
+            } catch {
+              setLoadError("Não foi possível encerrar o acesso ao histórico. Tente sair novamente.");
+            } finally {
+              setLeaving(false);
+            }
           }}
           className="flex items-center gap-1.5 text-xs text-muted-dark hover:text-foreground"
         >
           <LogOut size={14} />
-          Sair
+          {leaving ? "Saindo..." : "Sair"}
         </button>
       </div>
 
       {loadError && (
-        <p className="mt-6 text-sm text-red-400">
-          Não foi possível carregar seus agendamentos agora. Tente novamente
-          em instantes.
-        </p>
+        <p role="alert" className="mt-6 text-sm text-red-400">{loadError}</p>
       )}
 
       {!loadError && agendamentos.length === 0 ? (

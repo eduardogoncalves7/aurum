@@ -5,6 +5,8 @@
 // de novo numa próxima visita do MESMO navegador. NÃO é autenticação:
 // - não prova quem a pessoa é (qualquer um com acesso ao navegador vê/edita);
 // - não deve ser usado como controle de acesso a nada sensível;
+// - o histórico é autorizado separadamente pelo cookie HttpOnly emitido
+//   pelo servidor após salvar um agendamento, nunca por estes dados locais;
 // - não implementar aqui nenhuma verificação que pareça um "login seguro"
 //   (ex: bloquear rotas com base nisso) — daria uma falsa sensação de
 //   segurança. Autenticação de verdade, se algum dia for necessária, precisa

@@ -14,6 +14,7 @@ interface Props {
   total: number;
   whatsappDestination: string;
   onSendWhatsApp: () => void;
+  sending?: boolean;
 }
 
 export function EstimateSummary({
@@ -24,6 +25,7 @@ export function EstimateSummary({
   total,
   whatsappDestination,
   onSendWhatsApp,
+  sending = false,
 }: Props) {
   const whatsappReady = isWhatsAppConfigured(whatsappDestination);
   const hasEstimateOnly = lineItems.some((i) => i.isEstimate || i.requiresEvaluation);
@@ -72,7 +74,7 @@ export function EstimateSummary({
       <button
         type="button"
         onClick={onSendWhatsApp}
-        disabled={!whatsappReady}
+        disabled={!whatsappReady || sending}
         title={
           whatsappReady
             ? undefined
@@ -81,7 +83,7 @@ export function EstimateSummary({
         className="flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-border bg-background-elevated text-sm font-semibold text-muted disabled:cursor-not-allowed disabled:opacity-50"
       >
         <MessageCircle size={17} />
-        Enviar orçamento pelo WhatsApp
+        {sending ? "Registrando orçamento..." : "Enviar orçamento pelo WhatsApp"}
       </button>
     </div>
   );

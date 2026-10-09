@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { clearBookingAccess, submitBooking, submitQuote } from "@/lib/booking-submit";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getServiceById, higienizacaoServiceIds, isServiceAvailableForVehicleType, limpezaAddonServiceIds, limpezaTierServiceIds, catalogOnlyServiceIds, ppfCarroCompletoServiceIds, ppfCarroKitServiceIds, revestimentoTierServiceIds, services } from "@/lib/data/services";
 import { calculateQuoteTotal } from "@/lib/pricing";
@@ -73,6 +74,8 @@ export function BookingChat() {
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod | null>(null);
   const [bookedSlotsForDate, setBookedSlotsForDate] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitting = useRef(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
   const [dbServices, setDbServices] = useState<Service[]>([]);
   const [managedServiceIds, setManagedServiceIds] = useState<string[]>([]);
   const config = usePublicConfig();
@@ -134,8 +137,15 @@ export function BookingChat() {
     };
   }, [date]);
 
-  function handleSwitchAccount() {
+  async function handleSwitchAccount() {
+    try {
+      await clearBookingAccess();
+    } catch {
+      setBookingError("Não foi possível encerrar o acesso ao histórico. Tente novamente.");
+      return;
+    }
     clearSession();
+    setBookingError(null);
     setName("");
     setPhone("");
     setIsReturning(false);
@@ -227,7 +237,18 @@ export function BookingChat() {
     if (idx > 0) setStep(STEP_ORDER[idx - 1]);
   }
 
-  function handleSendWhatsApp() {
+  async function handleSendWhatsApp() {
+    if (!vehicle || submitting.current) return;
+    submitting.current = true;
+    setIsSubmitting(true);
+    setBookingError(null);
+    try {
+      await submitQuote({
+        nome: name, telefone: phone, veiculoTipo: vehicle.type,
+        veiculoDetalhe: vehicle.type === "car" ? vehicleChoice?.id ?? null : null,
+        servicos: lineItems.map((item) => ({ id: item.serviceId, nome: item.name, preco: item.price })),
+        valorEstimado: total,
+      });
     const message = buildWhatsAppMessage({
       name,
       phone,
@@ -236,22 +257,23 @@ export function BookingChat() {
       total,
     });
     const link = buildWhatsAppLink(config.whatsappDestination, message);
-    window.open(link, "_blank", "noopener,noreferrer");
+      window.location.assign(link);
+    } catch {
+      setBookingError("Não foi possível registrar o orçamento. Suas escolhas foram mantidas; tente enviar novamente.");
+    } finally {
+      submitting.current = false;
+      setIsSubmitting(false);
+    }
   }
 
-  /** Salva o agendamento no banco (nome, telefone, veículo, serviços
-   * cotados, data/horário) e só então mostra a tela de confirmação. Se a
-   * gravação falhar, o cliente não pode ficar travado — ele sempre termina
-   * no WhatsApp de qualquer forma, então seguimos pra confirmação mesmo
-   * assim e só registramos o erro no console do navegador. */
+  /** Show success only after the server confirms a persisted request. */
   async function handleConfirmBooking() {
-    if (!date || !time || !deliveryMethod || !vehicle) return;
+    if (!date || !time || !deliveryMethod || !vehicle || submitting.current) return;
+    submitting.current = true;
     setIsSubmitting(true);
+    setBookingError(null);
     try {
-      const response = await fetch("/api/agendamentos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      await submitBooking({
           nome: name,
           telefone: phone,
           veiculoTipo: vehicle.type,
@@ -265,17 +287,13 @@ export function BookingChat() {
           data: date,
           horario: time,
           formaEntrega: deliveryMethod,
-        }),
       });
-      if (!response.ok) {
-        const body = await response.json().catch(() => null);
-        console.error("Falha ao salvar agendamento:", body?.error ?? response.status);
-      }
-    } catch (error) {
-      console.error("Falha ao salvar agendamento:", error);
-    } finally {
-      setIsSubmitting(false);
       setStep("confirmation");
+    } catch {
+      setBookingError("Não foi possível confirmar o registro do agendamento. Confira seu histórico antes de tentar novamente ou fale com a Aurum pelo WhatsApp.");
+    } finally {
+      submitting.current = false;
+      setIsSubmitting(false);
     }
   }
 
@@ -287,6 +305,18 @@ export function BookingChat() {
 
   return (
     <div className="min-h-[calc(100vh-0px)] bg-background">
+      {bookingError && (
+        <div role="alert" className="mx-auto max-w-xl px-4 pt-4 text-sm text-red-400">
+          <p>{bookingError}</p>
+          <div className="mt-3 flex flex-wrap gap-4">
+            <a href="/agendamentos" className="underline underline-offset-2">Ver meus agendamentos</a>
+            <a
+              href={buildWhatsAppLink(config.whatsappDestination, buildWhatsAppMessage({ name, phone, vehicleLabel: vehicleSummaryLabel(vehicle), lineItems, total }))}
+              target="_blank" rel="noopener noreferrer" className="underline underline-offset-2"
+            >Falar pelo WhatsApp</a>
+          </div>
+        </div>
+      )}
       {step === "name" && (
         <StepContainer>
           <ChatMessage>
@@ -477,8 +507,9 @@ export function BookingChat() {
             total={total}
             whatsappDestination={config.whatsappDestination}
             onSendWhatsApp={handleSendWhatsApp}
+            sending={isSubmitting}
           />
-          <Button size="lg" onClick={() => goTo("date")}>
+          <Button size="lg" disabled={isSubmitting} onClick={() => goTo("date")}>
             Escolher data e horário
           </Button>
         </StepContainer>
@@ -519,7 +550,7 @@ export function BookingChat() {
             disabled={!deliveryMethod || isSubmitting}
             onClick={handleConfirmBooking}
           >
-            {isSubmitting ? "Confirmando..." : "Confirmar agendamento"}
+            {isSubmitting ? "Enviando..." : "Confirmar agendamento"}
           </Button>
         </StepContainer>
       )}
@@ -529,8 +560,9 @@ export function BookingChat() {
           <div className="flex flex-col items-center gap-1 py-2 text-center">
             <CalendarCheck className="text-gold" size={36} strokeWidth={1.5} />
             <h2 className="mt-2 font-display text-xl font-extrabold text-foreground">
-              Agendamento confirmado!
+              Solicitação de agendamento registrada!
             </h2>
+            <p className="mt-2 text-sm text-muted">Confirme a disponibilidade com a Aurum pelo WhatsApp.</p>
           </div>
 
           <div className="rounded-2xl border border-border-strong bg-background-secondary p-5">

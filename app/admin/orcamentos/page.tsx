@@ -5,6 +5,7 @@ import { Agendamento, AgendamentoStatus } from "@/lib/agendamentos";
 import { vehicleLabelFromAgendamento } from "@/lib/vehicle";
 import { formatCurrency, formatDatePtBr } from "@/lib/formatters";
 import { Badge } from "@/components/ui/Badge";
+import type { Orcamento } from "@/lib/orcamentos";
 
 const statusLabel: Record<AgendamentoStatus, string> = {
   pending: "Pendente",
@@ -23,6 +24,7 @@ const statusTone: Record<AgendamentoStatus, "neutral" | "gold" | "success" | "wa
 export default function AdminAgendamentosPage() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [loadError, setLoadError] = useState(false);
+  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/agendamentos")
@@ -36,15 +38,19 @@ export default function AdminAgendamentosPage() {
         );
       })
       .catch(() => setLoadError(true));
+    fetch("/api/admin/orcamentos", { cache: "no-store" })
+      .then((res) => { if (!res.ok) throw new Error("Falha ao carregar orçamentos"); return res.json(); })
+      .then((data) => setOrcamentos(data.orcamentos ?? []))
+      .catch(() => setLoadError(true));
   }, []);
 
   return (
     <div className="p-6 sm:p-8">
       <h1 className="font-display text-2xl font-extrabold text-foreground">
-        Agendamentos
+        Orçamentos e agendamentos
       </h1>
       <p className="mt-1 text-sm text-muted">
-        Todos os agendamentos confirmados pelo site.
+        Orçamentos solicitados pelo WhatsApp e agendamentos registrados pelo site.
       </p>
 
       {loadError && (
@@ -52,6 +58,25 @@ export default function AdminAgendamentosPage() {
           Não foi possível carregar os agendamentos agora.
         </p>
       )}
+
+      <section className="mt-8">
+        <h2 className="font-display text-lg font-bold text-foreground">Orçamentos sem agendamento</h2>
+        <p className="mt-1 text-sm text-muted">Registrados ao clicar em enviar pelo WhatsApp. Não reservam horário; o envio da mensagem é concluído pelo cliente no aplicativo.</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {orcamentos.length === 0 && <p className="text-sm text-muted">Nenhum orçamento registrado.</p>}
+          {orcamentos.map((orcamento) => (
+            <article key={orcamento.id} className="rounded-xl border border-border bg-background-secondary p-4">
+              <p className="font-semibold text-foreground">{orcamento.nome}</p>
+              <p className="mt-1 text-sm text-muted">{orcamento.telefone} · {vehicleLabelFromAgendamento(orcamento.veiculoTipo, orcamento.veiculoDetalhe)}</p>
+              <p className="mt-2 text-sm text-muted">{orcamento.servicos.map((service) => service.nome).join(", ")}</p>
+              <p className="mt-2 font-semibold text-gold-light">{formatCurrency(orcamento.valorEstimado)}</p>
+              <p className="mt-2 text-xs text-muted">Registrado em {new Date(orcamento.criadoEm).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <h2 className="mt-8 font-display text-lg font-bold text-foreground">Agendamentos</h2>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border">
         <table className="w-full min-w-[720px] text-sm">

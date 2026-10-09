@@ -15,6 +15,9 @@ BEGIN
   IF to_regclass('detailing.catalog_snapshot') IS NOT NULL THEN
     tables := array_append(tables, 'catalog_snapshot');
   END IF;
+  IF to_regclass('detailing.orcamentos') IS NOT NULL THEN
+    tables := array_append(tables, 'orcamentos');
+  END IF;
   FOREACH relation_name IN ARRAY tables LOOP
     IF to_regclass('public.' || relation_name) IS NOT NULL THEN
       RAISE EXCEPTION 'AURUM_ROLLBACK_CONFLICT: public destination is occupied';

@@ -23,6 +23,12 @@ npm run dev
 
 ## Deploy no Coolify com Docker
 
+Somente as ações finais gravam registros: `Confirmar agendamento` salva uma solicitação pendente com data/horário; `Enviar orçamento pelo WhatsApp` salva um orçamento na tabela separada `orcamentos`, sem reservar horário, e abre o WhatsApp depois de a API confirmar a gravação. O site não consegue verificar se a mensagem foi de fato enviada dentro do WhatsApp. Avançar pelas etapas ou calcular a estimativa não grava registros. A migração aditiva `0008_whatsapp_quotes.sql` cria a tabela; o admin lista esses orçamentos em `Orçamentos e agenda`.
+
+O histórico público exige uma chave privada do navegador, emitida somente após salvar um agendamento. O cookie é HttpOnly, SameSite=Strict e, em produção HTTPS, Secure com prefixo `__Host-`; o banco guarda apenas seu hash. O cookie dura até 90 dias. O histórico lista somente os registros criados com essa chave, não todos os agendamentos de um telefone. Digitar outro telefone ou alterar `localStorage` não libera registros. Sair ou trocar os dados encerra e revoga esse acesso; os registros continuam disponíveis no admin. Agendamentos antigos e de outros aparelhos devem ser consultados com a Aurum até existir um fluxo de recuperação com verificação de identidade.
+
+A migração aditiva `0007_private_booking_history.sql` acrescenta `acesso_hash` e um índice; não apaga agendamentos nem concede acesso público aos registros antigos. Ela roda no startup do container. Confira seu sucesso antes de testar o agendamento: sem a migração, a nova versão bloqueia gravações e histórico em vez de voltar à consulta insegura por telefone. A tela só informa que a solicitação foi registrada após a API confirmar a gravação; o status permanece pendente. Em falhas, mantém as escolhas, orienta a conferir o histórico e oferece contato pelo WhatsApp, sem simular confirmação.
+
 - Crie PostgreSQL no Coolify ou use um serviço Postgres externo. Para serviço no mesmo projeto, use o hostname interno do serviço na `DATABASE_URL`, não `localhost`.
 - Configure `DATABASE_URL`, `ADMIN_USER` e `ADMIN_PASSWORD` como variáveis de runtime do serviço da aplicação.
 - Configure as variáveis `NEXT_PUBLIC_*` como argumentos de build e variáveis de runtime para os valores iniciais/fallback de WhatsApp, telefone, Instagram, endereço e horário. O admin grava os valores atuais no banco; mudanças feitas depois ficam ativas sem rebuild.

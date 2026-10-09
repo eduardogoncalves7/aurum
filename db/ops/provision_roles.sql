@@ -25,6 +25,7 @@ $roles$;
 ALTER SCHEMA detailing OWNER TO detailing_owner;
 ALTER TABLE detailing._migrations OWNER TO detailing_owner;
 ALTER TABLE detailing.agendamentos OWNER TO detailing_owner;
+ALTER TABLE detailing.orcamentos OWNER TO detailing_owner;
 ALTER TABLE detailing.catalog_items OWNER TO detailing_owner;
 ALTER TABLE detailing.site_settings OWNER TO detailing_owner;
 ALTER TABLE detailing.catalog_snapshot OWNER TO detailing_owner;
@@ -38,7 +39,7 @@ REVOKE ALL ON ALL SEQUENCES IN SCHEMA detailing FROM detailing_app;
 GRANT USAGE ON SCHEMA detailing TO detailing_app;
 GRANT SELECT ON detailing._migrations TO detailing_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON detailing.agendamentos,
-  detailing.catalog_items, detailing.site_settings, detailing.catalog_snapshot TO detailing_app;
+  detailing.orcamentos, detailing.catalog_items, detailing.site_settings, detailing.catalog_snapshot TO detailing_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA detailing TO detailing_app;
 
 -- No database-wide REVOKE and no changes to public/financial grants.

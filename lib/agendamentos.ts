@@ -79,15 +79,16 @@ function validateAndNormalize(input: AgendamentoInput): AgendamentoInput {
 }
 
 export async function createAgendamento(
-  rawInput: AgendamentoInput
+  rawInput: AgendamentoInput,
+  accessHash: string
 ): Promise<Agendamento> {
   const input = validateAndNormalize(rawInput);
   const pool = getPool();
 
   const result = await pool.query(
     `INSERT INTO ${quotedDbSchema()}.agendamentos
-      (telefone, nome, veiculo_tipo, veiculo_detalhe, servicos, valor_estimado, data, horario, forma_entrega, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
+      (telefone, nome, veiculo_tipo, veiculo_detalhe, servicos, valor_estimado, data, horario, forma_entrega, status, acesso_hash)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', $10)
      RETURNING *`,
     [
       input.telefone,
@@ -99,22 +100,29 @@ export async function createAgendamento(
       input.data,
       input.horario,
       input.formaEntrega,
+      accessHash,
     ]
   );
 
   return mapRow(result.rows[0]);
 }
 
-export async function listAgendamentosByTelefone(
-  telefoneRaw: string
+export async function listAgendamentosByAccessHash(
+  accessHash: string
 ): Promise<Agendamento[]> {
-  const telefone = normalizePhone(telefoneRaw);
   const pool = getPool();
   const result = await pool.query(
-    `SELECT * FROM ${quotedDbSchema()}.agendamentos WHERE telefone = $1 ORDER BY data DESC, horario DESC`,
-    [telefone]
+    `SELECT * FROM ${quotedDbSchema()}.agendamentos WHERE acesso_hash = $1 ORDER BY data DESC, horario DESC`,
+    [accessHash]
   );
   return result.rows.map(mapRow);
+}
+
+export async function revokeBookingAccess(accessHash: string): Promise<void> {
+  await getPool().query(
+    `UPDATE ${quotedDbSchema()}.agendamentos SET acesso_hash = NULL WHERE acesso_hash = $1`,
+    [accessHash]
+  );
 }
 
 /** Horários já ocupados numa data (qualquer cliente) — usado pelo
