@@ -20,6 +20,14 @@ const VALID_CATEGORIES: ServiceCategoryId[] = [
   "cristalizacao",
 ];
 let factoryCatalogSeeded = false;
+const PUBLIC_CATALOG_CACHE_TTL_MS = 30_000;
+let publicCatalogCache:
+  | { expiresAt: number; promise: Promise<CatalogItem[]> }
+  | undefined;
+
+function invalidatePublicCatalogCache(): void {
+  publicCatalogCache = undefined;
+}
 
 class ValidationError extends Error {}
 
@@ -166,6 +174,7 @@ export async function createCatalogItem(raw: CatalogItemInput): Promise<CatalogI
       JSON.stringify(input.detalhes?.priceBreakdown ?? []),
     ]
   );
+  invalidatePublicCatalogCache();
   return mapRow(result.rows[0]);
 }
 
@@ -205,6 +214,7 @@ export async function updateCatalogItem(
     ]
   );
   if (result.rows.length === 0) throw new ValidationError("Item não encontrado.");
+  invalidatePublicCatalogCache();
   return mapRow(result.rows[0]);
 }
 
@@ -217,6 +227,7 @@ export async function deleteCatalogItem(id: string): Promise<void> {
   if (!result.rowCount) {
     await pool.query(`DELETE FROM ${quotedDbSchema()}.catalog_items WHERE id::text = $1`, [id]);
   }
+  invalidatePublicCatalogCache();
 }
 
 /** Tudo, inclusive inativos/expirados — só pro /admin. */
@@ -230,6 +241,29 @@ export async function listAllCatalogItems(): Promise<CatalogItem[]> {
 /** Só o que deve aparecer no site: ativo, e (sem datas de promoção OU
  * dentro da janela de datas). Promoção fora da janela some sozinha. */
 export async function listPublicCatalogItems(): Promise<CatalogItem[]> {
+  if (publicCatalogCache && publicCatalogCache.expiresAt > Date.now()) {
+    return publicCatalogCache.promise;
+  }
+
+  const entry = {
+    expiresAt: Number.POSITIVE_INFINITY,
+    promise: loadPublicCatalogItems(),
+  };
+  publicCatalogCache = entry;
+
+  try {
+    const items = await entry.promise;
+    if (publicCatalogCache === entry) {
+      entry.expiresAt = Date.now() + PUBLIC_CATALOG_CACHE_TTL_MS;
+    }
+    return items;
+  } catch (error) {
+    if (publicCatalogCache === entry) publicCatalogCache = undefined;
+    throw error;
+  }
+}
+
+async function loadPublicCatalogItems(): Promise<CatalogItem[]> {
   await ensureFactoryCatalog();
   const pool = getPool();
   const result = await pool.query(
