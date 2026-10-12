@@ -12,10 +12,10 @@ export interface PublicConfig {
 
 const defaults: PublicConfig = {
   whatsappDestination: "553186506463",
-  address: "Rua Itaparica, 1494, Giovanini, Coronel Fabriciano - MG, 35170-101",
-  instagram: "@aurumdetailing",
-  phone: "(31) 8650-6463",
-  hours: "Seg a Sáb, 08h às 18h",
+  address: "R. Itaparica, 1494 - Giovanini, Cel. Fabriciano - MG, 35170-101",
+  instagram: "@eduardo_ag7",
+  phone: "553186506463",
+  hours: "07:00 - 18:30",
 };
 
 export function getPublicConfig(): PublicConfig {
