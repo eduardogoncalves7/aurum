@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPin, Phone } from "lucide-react";
+import Link from "next/link";
 import { usePublicConfig } from "@/lib/use-public-config";
 import { buildMapsLink } from "@/lib/maps";
 
@@ -45,6 +46,11 @@ export function Footer() {
               <span className="min-w-0 break-words">{config.address}</span>
             </a>
           </address>
+        </div>
+        <div className="text-xs text-muted md:col-span-3">
+          <Link href="/politica-de-privacidade" className="underline underline-offset-2 transition-colors hover:text-gold-light">
+            Política de Privacidade
+          </Link>
         </div>
       </div>
     </footer>

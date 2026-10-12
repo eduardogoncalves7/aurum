@@ -32,6 +32,7 @@ export function ServiceImage({
     <img
       src={src}
       alt={service.name}
+      draggable={false}
       className={cn("h-full w-full object-cover", className)}
       loading="lazy"
       onError={() => setFailed(true)}

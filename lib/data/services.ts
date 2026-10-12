@@ -20,7 +20,7 @@ export const services: Service[] = [
       "Limpeza premium + vitrificação 9H + PPF em pontos de atrito + proteção completa.",
     description:
       "Pacote fechado pensado pra quem acabou de tirar o carro 0km da concessionária: limpeza premium, vitrificação 9H de pintura (proteção por até 3 anos), PPF nas quinas de porta e conchas de maçaneta, proteção nos vidros e vitrificação dos plásticos externos.",
-    image: "/images/services/combo-carro-0km.jpg",
+    image: "/images/services/combo-carro-0km.webp",
     pricingType: "vehicle_category",
     vehicleDimension: "body",
     prices: { hatch_sedan: 2700, suv: 2850, pickup: 3000 },
@@ -42,7 +42,7 @@ export const services: Service[] = [
       "Limpeza premium + higienização de bancos e forros + polimento comercial + limpeza do motor.",
     description:
       "Pacote fechado pra deixar o carro pronto pra anunciar e vender: limpeza premium, higienização dos bancos e forros de porta, polimento comercial e limpeza do motor.",
-    image: "/images/services/combo-preparacao-venda.jpg",
+    image: "/images/services/combo-preparacao-venda.webp",
     pricingType: "vehicle_category",
     vehicleDimension: "body",
     prices: { hatch_sedan: 1100, suv: 1250, pickup: 1400 },
@@ -63,7 +63,7 @@ export const services: Service[] = [
     shortDescription: "Proteção de 1 ou 3 anos com brilho molhado e duradouro.",
     description:
       "Camada cerâmica de alta resistência que protege a pintura contra sujeira, raios UV e desgaste, com brilho molhado por anos.",
-    image: "/images/services/revestimento-ceramico.jpg",
+    image: "/images/services/revestimento-ceramico.webp",
     pricingType: "vehicle_category",
     vehicleDimension: "size",
     featured: true,
@@ -118,7 +118,7 @@ export const services: Service[] = [
     shortDescription: "Proteção de 1 ano com brilho molhado e duradouro.",
     description:
       "Camada cerâmica de alta resistência que protege a pintura contra sujeira, raios UV e desgaste, com brilho molhado por 1 ano.",
-    image: "/images/services/revestimento-ceramico.jpg",
+    image: "/images/services/revestimento-ceramico.webp",
     pricingType: "vehicle_category",
     vehicleDimension: "size",
     prices: { small: 1500, medium: 1700, large: 1900 },
@@ -153,7 +153,7 @@ export const services: Service[] = [
     shortDescription: "Proteção de 3 anos com brilho molhado e duradouro.",
     description:
       "Camada cerâmica de alta resistência que protege a pintura contra sujeira, raios UV e desgaste, com brilho molhado por 3 anos.",
-    image: "/images/services/revestimento-ceramico.jpg",
+    image: "/images/services/revestimento-ceramico.webp",
     pricingType: "vehicle_category",
     vehicleDimension: "size",
     prices: { small: 2500, medium: 2700, large: 3000 },
@@ -205,7 +205,7 @@ export const services: Service[] = [
     shortDescription: "Película de proteção contra riscos e impactos, credenciado ALTA.",
     description:
       "Película transparente de alta resistência aplicada sobre a pintura do veículo para protegê-la contra riscos, impactos de pedras, arranhões leves, manchas e ação do tempo, preservando o brilho e a aparência original por muito mais tempo. Serviço credenciado ALTA.",
-    image: "/images/services/ppf-carro.jpg",
+    image: "/images/services/ppf-carro.webp",
     pricingType: "starting_at",
     vehicleDimension: "none",
     startingPrice: 4390,
@@ -243,7 +243,7 @@ export const services: Service[] = [
     hiddenFromCatalog: true,
     name: "PPF — Para-choque",
     shortDescription: "Kit de PPF para o para-choque dianteiro.",
-    image: "/images/services/ppf-carro.jpg",
+    image: "/images/services/ppf-carro.webp",
     pricingType: "fixed",
     vehicleDimension: "none",
     fixedPrice: 1490,
@@ -255,7 +255,7 @@ export const services: Service[] = [
     hiddenFromCatalog: true,
     name: "PPF — Capô",
     shortDescription: "Kit de PPF para o capô.",
-    image: "/images/services/ppf-carro.jpg",
+    image: "/images/services/ppf-carro.webp",
     pricingType: "fixed",
     vehicleDimension: "none",
     fixedPrice: 1390,
@@ -267,7 +267,7 @@ export const services: Service[] = [
     hiddenFromCatalog: true,
     name: "PPF — Colunas em Black Piano",
     shortDescription: "Kit de PPF para as colunas em black piano.",
-    image: "/images/services/ppf-carro.jpg",
+    image: "/images/services/ppf-carro.webp",
     pricingType: "fixed",
     vehicleDimension: "none",
     fixedPrice: 600,
@@ -279,7 +279,7 @@ export const services: Service[] = [
     hiddenFromCatalog: true,
     name: "PPF — Farol",
     shortDescription: "Kit de PPF para os faróis.",
-    image: "/images/services/ppf-carro.jpg",
+    image: "/images/services/ppf-carro.webp",
     pricingType: "fixed",
     vehicleDimension: "none",
     fixedPrice: 550,
@@ -291,7 +291,7 @@ export const services: Service[] = [
     hiddenFromCatalog: true,
     name: "PPF — Quinas e Conchas de Maçaneta",
     shortDescription: "Kit de PPF para quinas e conchas de maçaneta.",
-    image: "/images/services/ppf-carro.jpg",
+    image: "/images/services/ppf-carro.webp",
     pricingType: "fixed",
     vehicleDimension: "none",
     fixedPrice: 500,
@@ -303,7 +303,7 @@ export const services: Service[] = [
     hiddenFromCatalog: true,
     name: "PPF — Soleiras de Portas",
     shortDescription: "Kit de PPF para soleiras de portas.",
-    image: "/images/services/ppf-carro.jpg",
+    image: "/images/services/ppf-carro.webp",
     pricingType: "fixed",
     vehicleDimension: "none",
     fixedPrice: 500,
@@ -316,7 +316,7 @@ export const services: Service[] = [
     name: "PPF Full",
     shortDescription:
       "Capô, parachoque dianteiro e traseiro, para-lamas, laterais, tampa, porta-malas, teto, colunas, retrovisores e farol.",
-    image: "/images/services/ppf-carro.jpg",
+    image: "/images/services/ppf-carro.webp",
     pricingType: "starting_at",
     vehicleDimension: "none",
     startingPrice: 14990,
@@ -329,7 +329,7 @@ export const services: Service[] = [
     hiddenFromCatalog: true,
     name: "Proteção Híbrida",
     shortDescription: "Kit frontal + vitrificação no restante do veículo.",
-    image: "/images/services/ppf-carro.jpg",
+    image: "/images/services/ppf-carro.webp",
     pricingType: "starting_at",
     vehicleDimension: "none",
     startingPrice: 5990,
@@ -342,7 +342,7 @@ export const services: Service[] = [
     hiddenFromCatalog: true,
     name: "PPF Frontal",
     shortDescription: "Capô, parachoque dianteiro, para-lamas dianteiros e par de faróis.",
-    image: "/images/services/ppf-carro.jpg",
+    image: "/images/services/ppf-carro.webp",
     pricingType: "starting_at",
     vehicleDimension: "none",
     startingPrice: 4390,
@@ -583,7 +583,7 @@ export const services: Service[] = [
       "Remove marcas de contaminação e chuva ácida, com mais visibilidade na chuva.",
     description:
       "Tratamento que remove marcas de contaminação e chuva ácida dos vidros, melhora a visibilidade em dias de chuva e facilita o desprendimento de sujidades.",
-    image: "/images/services/cristalizacao-vidros.jpg",
+    image: "/images/services/cristalizacao-vidros.webp",
     pricingType: "fixed",
     vehicleDimension: "none",
     fixedPrice: 250,
@@ -600,13 +600,13 @@ export function getServiceById(id: string, extra: Service[] = []): Service | und
 }
 
 /** Convenção de arquivo: uma imagem por serviço em /public/images/services/,
- * nomeada exatamente como o id do serviço (ex: revestimento-ceramico.jpg).
+ * nomeada exatamente como o id do serviço (ex: revestimento-ceramico.webp).
  * Os componentes que exibem a imagem já fazem fallback para um placeholder
  * caso o arquivo não exista. */
 export function getServiceImagePath(service: Service): string {
   const image = service.image;
   if (image?.startsWith("/uploads/")) return `/api${image}`;
-  return image ?? `/images/services/${service.id}.jpg`;
+  return image ?? `/images/services/${service.id}.webp`;
 }
 
 /** As 3 opções de Limpeza (carro) — no fluxo de orçamento aparecem

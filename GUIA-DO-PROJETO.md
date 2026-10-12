@@ -267,8 +267,8 @@ O Next.js usa o nome das pastas como endereço da URL. Uma pasta com
   WhatsApp, endereço, etc.
 
 ### 4.9 `public/images/services/`
-As 18 fotos usadas no site, nomeadas exatamente igual ao id de cada
-serviço (ex: `revestimento-ceramico.jpg`). Trocar a fotos é só substituir o
+As 22 fotos usadas no site, nomeadas exatamente igual ao id de cada
+serviço (ex: `revestimento-ceramico.webp`). Trocar a fotos é só substituir o
 arquivo — nenhum código precisa mudar.
 
 ### 4.10 Arquivos de configuração (raiz do projeto)

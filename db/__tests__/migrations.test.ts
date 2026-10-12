@@ -66,7 +66,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
     const after = await snapshot(db, "public");
     for (const table of ["agendamentos", "catalog_items", "site_settings"]) expect(after[table]).toEqual(before[table]);
     expect((await db.query("SELECT 'public.agendamentos'::regclass::oid AS oid")).rows).toEqual(oid);
-    expect((await db.query("SELECT name FROM public._migrations ORDER BY name")).rows).toEqual([...legacy, "0005_create_catalog_snapshot.sql", "0006_canonical_catalog.sql", "0007_private_booking_history.sql", "0008_whatsapp_quotes.sql"].map(name => ({ name })));
+    expect((await db.query("SELECT name FROM public._migrations ORDER BY name")).rows).toEqual([...legacy, "0005_create_catalog_snapshot.sql", "0006_canonical_catalog.sql", "0007_private_booking_history.sql", "0008_whatsapp_quotes.sql", "0009_service_images_webp.sql"].map(name => ({ name })));
     expect((await db.query("SELECT to_regnamespace('detailing') AS target")).rows).toEqual([{ target: null }]);
     await db.exec("INSERT INTO public.catalog_snapshot(origem,hash,conteudo) VALUES ('test','hash','{}')");
     await runMigrations(poolFor(db));
@@ -104,7 +104,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
     const after = await snapshot(db, "detailing");
     for (const table of ["agendamentos", "catalog_items", "site_settings"]) expect(after[table]).toEqual(before[table]);
     const history = await db.query<{ name: string }>("SELECT name FROM detailing._migrations ORDER BY name");
-    expect(history.rows.map(r => r.name)).toEqual([...legacy, "0004_move_to_detailing.sql", "0005_create_catalog_snapshot.sql", "0006_canonical_catalog.sql", "0007_private_booking_history.sql", "0008_whatsapp_quotes.sql"]);
+    expect(history.rows.map(r => r.name)).toEqual([...legacy, "0004_move_to_detailing.sql", "0005_create_catalog_snapshot.sql", "0006_canonical_catalog.sql", "0007_private_booking_history.sql", "0008_whatsapp_quotes.sql", "0009_service_images_webp.sql"]);
     expect((await db.query("SELECT 'detailing.agendamentos'::regclass::oid AS oid")).rows).toEqual(oldOid);
     expect((await db.query("SELECT * FROM financeiro.agendamentos")).rows).toEqual([{ id: 7, note: "untouched" }]);
     expect((await db.query("SELECT * FROM financeiro._migrations")).rows).toEqual([{ name: "finance-only" }]);

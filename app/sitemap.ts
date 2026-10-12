@@ -22,6 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: `${origin}/` },
     { url: `${origin}/servicos` },
+    { url: `${origin}/politica-de-privacidade` },
     ...entries.filter((entry, index) => entries.findIndex((other) => other.url === entry.url) === index),
   ];
 }

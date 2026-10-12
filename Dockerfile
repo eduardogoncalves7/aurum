@@ -68,4 +68,4 @@ EXPOSE 3000
 # modo degradado (o resto do código já trata ausência de banco graciosamente
 # nas páginas públicas). Preferível a derrubar o site inteiro por causa de um
 # problema só na parte de agendamentos/catálogo administrável.
-CMD ["sh", "-c", "node scripts/migrate.js; node server.js"]
+CMD ["sh", "-c", "node scripts/migrate.js; node scripts/convert-existing-uploads.cjs; node server.js"]

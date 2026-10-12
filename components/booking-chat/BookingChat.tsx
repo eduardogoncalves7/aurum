@@ -28,6 +28,7 @@ import { WhatsAppRedirect } from "@/components/booking-chat/WhatsAppRedirect";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { CalendarCheck } from "lucide-react";
+import Link from "next/link";
 
 type Step =
   | "name"
@@ -333,6 +334,12 @@ export function BookingChat() {
             placeholder="Seu nome completo"
             autoComplete="name"
           />
+          <p className="-mt-3 text-[11px] leading-relaxed text-muted">
+            Ao continuar, você confirma que leu e concorda com o uso dos dados informados conforme nossa{" "}
+            <Link href="/politica-de-privacidade" className="underline underline-offset-2 hover:text-foreground">
+              Política de Privacidade
+            </Link>.
+          </p>
           <Button
             size="lg"
             disabled={!name.trim()}

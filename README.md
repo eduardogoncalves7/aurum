@@ -50,7 +50,7 @@ O domínio padrão é `https://aurum.melhornegocio.shop`. Para trocar de domíni
 
 `/robots.txt` indica o sitemap e orienta buscadores a não rastrear `/admin` e `/api/`; a autenticação do admin continua sendo a proteção de acesso. Orçamento, agendamento e URLs com parâmetros não entram no sitemap. Após o deploy, confira ambos os endereços e envie `/sitemap.xml` no Google Search Console do domínio oficial. A inclusão no sitemap não garante indexação.
 
-Novas fotos enviadas pelo admin são validadas e convertidas automaticamente para WebP (qualidade 82), com até 1920 pixels em cada dimensão, sem ampliar imagens menores. A proporção, a orientação e a transparência são preservadas; metadados EXIF são removidos. O upload aceita JPG, PNG e WebP de até 5 MB e 40 megapixels, sem animação. Fotos antigas continuam disponíveis no formato original.
+Uploads do admin aceitam JPG, PNG e WebP de até 5 MB e 40 megapixels, sem animação. São convertidos para WebP com alvo de 300 KiB, qualidade adaptativa e até 1920 px por dimensão; se necessário, o otimizador reduz a imagem até 1280 px. As 22 fotos de serviço do site também foram convertidas para WebP. Imagens antigas do admin que ainda estejam em JPG ou PNG são convertidas na inicialização do container, com atualização dos caminhos do catálogo; os arquivos originais são preservados se a migração falhar.
 
 ## Desenvolvimento
 
