@@ -2,6 +2,6 @@ node_modules
 .next
 .git
 npm-debug.log*
-.env*.local
+.env*
 .DS_Store
 *.md
