@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PromotionDateInput } from "@/components/admin/PromotionDateInput";
 import { brazilianDateToIso, isoDateToBrazilian, promotionDateError, todayInSaoPaulo } from "@/lib/promotion-dates";
+import { readUploadResponse, validateUpload } from "@/lib/admin-upload";
 
 const MOTO_PRICE_FIELDS: { key: string; label: string }[] = [
   { key: "motorcycle", label: "Moto (R$)" },
@@ -95,21 +96,23 @@ export function CatalogItemForm({
         : form.vehicleDimension === "motorcycle" ? MOTO_PRICE_FIELDS : form.veiculoTipo === "car" ? BODY_PRICE_FIELDS : MOTO_PRICE_FIELDS;
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const input = e.currentTarget;
+    const file = input.files?.[0];
     if (!file) return;
     setUploading(true);
     setError(null);
     try {
+      validateUpload(file);
       const body = new FormData();
       body.append("file", file);
       const res = await fetch("/api/admin/uploads", { method: "POST", body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Falha no upload.");
-      setForm((f) => ({ ...f, foto: data.path }));
+      const photoPath = await readUploadResponse(res);
+      setForm((f) => ({ ...f, foto: photoPath }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha no upload.");
     } finally {
       setUploading(false);
+      input.value = "";
     }
   }
 
