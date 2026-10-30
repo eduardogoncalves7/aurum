@@ -65,4 +65,4 @@ EXPOSE 3000
 # Inicia o servidor sem bloquear o healthcheck em uma tentativa de conexão ou
 # lock do Postgres. A migração continua em paralelo e as rotas administrativas
 # só passam a usar a nova coluna depois que ela for aplicada.
-CMD ["sh", "-c", "node scripts/migrate.js & node scripts/convert-existing-uploads.cjs; exec node server.js"]
+CMD ["sh", "-c", "node scripts/migrate.js & node scripts/convert-existing-uploads.cjs & exec node server.js"]
