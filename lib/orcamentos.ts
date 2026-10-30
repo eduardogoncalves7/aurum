@@ -12,7 +12,8 @@ const quoteSchema = z.object({
 });
 
 export type OrcamentoInput = z.infer<typeof quoteSchema>;
-export interface Orcamento extends OrcamentoInput { id: string; criadoEm: string }
+export type OrcamentoStatus = "pending" | "confirmed" | "cancelled" | "completed";
+export interface Orcamento extends OrcamentoInput { id: string; status: OrcamentoStatus; criadoEm: string }
 
 export async function createOrcamento(raw: unknown): Promise<Orcamento> {
   const input = quoteSchema.parse(raw);
@@ -29,6 +30,18 @@ export async function listOrcamentos(): Promise<Orcamento[]> {
   return rows.map(mapRow);
 }
 
-function mapRow(row: { id: string; nome: string; telefone: string; veiculo_tipo: OrcamentoInput["veiculoTipo"]; veiculo_detalhe: OrcamentoInput["veiculoDetalhe"]; servicos: OrcamentoInput["servicos"]; valor_estimado: string; criado_em: Date | string }): Orcamento {
-  return { id: row.id, nome: row.nome, telefone: row.telefone, veiculoTipo: row.veiculo_tipo, veiculoDetalhe: row.veiculo_detalhe, servicos: row.servicos, valorEstimado: Number(row.valor_estimado), criadoEm: row.criado_em instanceof Date ? row.criado_em.toISOString() : row.criado_em };
+export async function updateOrcamentoStatus(
+  id: string,
+  status: OrcamentoStatus,
+): Promise<Orcamento | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const { rows } = await getPool().query(
+    `UPDATE ${quotedDbSchema()}.orcamentos SET status = $2 WHERE id = $1 RETURNING *`,
+    [id, status],
+  );
+  return rows[0] ? mapRow(rows[0]) : null;
+}
+
+function mapRow(row: { id: string; nome: string; telefone: string; veiculo_tipo: OrcamentoInput["veiculoTipo"]; veiculo_detalhe: OrcamentoInput["veiculoDetalhe"]; servicos: OrcamentoInput["servicos"]; valor_estimado: string; status?: OrcamentoStatus; criado_em: Date | string }): Orcamento {
+  return { id: row.id, nome: row.nome, telefone: row.telefone, veiculoTipo: row.veiculo_tipo, veiculoDetalhe: row.veiculo_detalhe, servicos: row.servicos, valorEstimado: Number(row.valor_estimado), status: row.status ?? "pending", criadoEm: row.criado_em instanceof Date ? row.criado_em.toISOString() : row.criado_em };
 }

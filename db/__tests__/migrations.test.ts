@@ -66,7 +66,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
     const after = await snapshot(db, "public");
     for (const table of ["agendamentos", "catalog_items", "site_settings"]) expect(after[table]).toEqual(before[table]);
     expect((await db.query("SELECT 'public.agendamentos'::regclass::oid AS oid")).rows).toEqual(oid);
-    expect((await db.query("SELECT name FROM public._migrations ORDER BY name")).rows).toEqual([...legacy, "0005_create_catalog_snapshot.sql", "0006_canonical_catalog.sql", "0007_private_booking_history.sql", "0008_whatsapp_quotes.sql", "0009_service_images_webp.sql"].map(name => ({ name })));
+    expect((await db.query("SELECT name FROM public._migrations ORDER BY name")).rows).toEqual([...legacy, "0005_create_catalog_snapshot.sql", "0006_canonical_catalog.sql", "0007_private_booking_history.sql", "0008_whatsapp_quotes.sql", "0009_service_images_webp.sql", "0010_record_statuses.sql"].map(name => ({ name })));
     expect((await db.query("SELECT to_regnamespace('detailing') AS target")).rows).toEqual([{ target: null }]);
     await db.exec("INSERT INTO public.catalog_snapshot(origem,hash,conteudo) VALUES ('test','hash','{}')");
     await runMigrations(poolFor(db));
@@ -87,7 +87,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
   }, 30000);
   it("creates fresh catalogs in a configured schema and validates identifiers", async () => {
     const db = open(); await runMigrations(poolFor(db), { schema: "aurum_test" });
-    expect((await db.query("SELECT count(*)::int AS count FROM aurum_test._migrations")).rows).toEqual([{ count: 7 }]);
+    expect((await db.query("SELECT count(*)::int AS count FROM aurum_test._migrations")).rows).toEqual([{ count: 9 }]);
     expect((await db.query("SELECT to_regclass('public.catalog_snapshot') AS target")).rows).toEqual([{ target: null }]);
     expect(getDbSchema()).toBe("public"); expect(quotedDbSchema("detailing")).toBe('"detailing"');
     for (const invalid of ["", "a;DROP SCHEMA public", "public,financeiro", "pg_catalog", "information_schema", "with space", "A".repeat(64)]) {
@@ -104,7 +104,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
     const after = await snapshot(db, "detailing");
     for (const table of ["agendamentos", "catalog_items", "site_settings"]) expect(after[table]).toEqual(before[table]);
     const history = await db.query<{ name: string }>("SELECT name FROM detailing._migrations ORDER BY name");
-    expect(history.rows.map(r => r.name)).toEqual([...legacy, "0004_move_to_detailing.sql", "0005_create_catalog_snapshot.sql", "0006_canonical_catalog.sql", "0007_private_booking_history.sql", "0008_whatsapp_quotes.sql", "0009_service_images_webp.sql"]);
+    expect(history.rows.map(r => r.name)).toEqual([...legacy, "0004_move_to_detailing.sql", "0005_create_catalog_snapshot.sql", "0006_canonical_catalog.sql", "0007_private_booking_history.sql", "0008_whatsapp_quotes.sql", "0009_service_images_webp.sql", "0010_record_statuses.sql"]);
     expect((await db.query("SELECT 'detailing.agendamentos'::regclass::oid AS oid")).rows).toEqual(oldOid);
     expect((await db.query("SELECT * FROM financeiro.agendamentos")).rows).toEqual([{ id: 7, note: "untouched" }]);
     expect((await db.query("SELECT * FROM financeiro._migrations")).rows).toEqual([{ name: "finance-only" }]);
@@ -140,7 +140,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
 
   it("creates a fresh installation only in detailing and stores JSON snapshots", async () => {
     const db = open(); await migrate(poolFor(db));
-    expect((await db.query("SELECT count(*)::integer AS count FROM detailing._migrations")).rows).toEqual([{ count: 8 }]);
+    expect((await db.query("SELECT count(*)::integer AS count FROM detailing._migrations")).rows).toEqual([{ count: 10 }]);
     expect((await db.query("SELECT to_regclass('public.catalog_items') AS target")).rows).toEqual([{ target: null }]);
     const result = await db.query<{ id: number; conteudo: unknown }>("INSERT INTO detailing.catalog_snapshot(origem,hash,conteudo) VALUES ($1,$2,$3) RETURNING id,conteudo", ["test", "hash", JSON.stringify({ rows: [1] })]);
     expect(result.rows[0].conteudo).toEqual({ rows: [1] });
@@ -186,7 +186,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
 
   it("keeps the Docker startup separator even when migrations exit nonzero", () => {
     const docker = readFileSync("Dockerfile", "utf8");
-    expect(docker).toContain('CMD ["sh", "-c", "node scripts/migrate.js; node server.js"]');
+    expect(docker).toContain('CMD ["sh", "-c", "node scripts/migrate.js; node scripts/convert-existing-uploads.cjs; node server.js"]');
   });
   it("does not commit DDL when recording its migration fails, then resumes", async () => {
     const db = open(); await seedLegacy(db);
@@ -199,7 +199,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
     expect((await db.query("SELECT to_regclass('detailing.catalog_snapshot') AS target")).rows).toEqual([{ target: null }]);
     expect((await db.query("SELECT count(*)::integer AS count FROM detailing._migrations")).rows).toEqual([{ count: 4 }]);
     await migrate(poolFor(db));
-    expect((await db.query("SELECT count(*)::integer AS count FROM detailing._migrations")).rows).toEqual([{ count: 8 }]);
+    expect((await db.query("SELECT count(*)::integer AS count FROM detailing._migrations")).rows).toEqual([{ count: 10 }]);
   }, 30000);
   it("refuses a busy migration lock before executing DDL and releases the client", async () => {
     const query = vi.fn().mockResolvedValue({ rows: [{ acquired: false }] });

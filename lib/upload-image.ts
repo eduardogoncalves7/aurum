@@ -5,10 +5,10 @@ const TARGET_SIZE_BYTES = 300 * 1024;
 const MAX_DIMENSION = 1920;
 const MIN_DIMENSION = 1280;
 const WEBP_QUALITIES = [82, 74, 66];
+const SHARP_OPTIONS = { limitInputPixels: 40_000_000, failOn: "warning" as const };
 
-// Limit decoded pixels as well as file size: compressed images can be enormous.
-export async function optimizeUploadImage(input: Buffer): Promise<Buffer> {
-  const image = sharp(input, { limitInputPixels: 40_000_000, failOn: "warning" });
+async function inspectUpload(input: Buffer) {
+  const image = sharp(input, SHARP_OPTIONS);
   const metadata = await image.metadata();
   if (!metadata.format || !ALLOWED_FORMATS.has(metadata.format)) {
     throw new Error("Formato de imagem inválido.");
@@ -16,13 +16,24 @@ export async function optimizeUploadImage(input: Buffer): Promise<Buffer> {
   if ((metadata.pages ?? 1) > 1) {
     throw new Error("Envie uma imagem sem animação.");
   }
+  return metadata;
+}
+
+export async function getUploadFormat(input: Buffer): Promise<string> {
+  const metadata = await inspectUpload(input);
+  return metadata.format as string;
+}
+
+// Limit decoded pixels as well as file size: compressed images can be enormous.
+export async function optimizeUploadImage(input: Buffer): Promise<Buffer> {
+  await inspectUpload(input);
 
   // Auto-orient before resizing; omit EXIF (including location) from the output.
   let maxDimension = MAX_DIMENSION;
   let output = Buffer.alloc(0);
   while (true) {
     for (const quality of WEBP_QUALITIES) {
-      output = await sharp(input, { limitInputPixels: 40_000_000, failOn: "warning" })
+      output = await sharp(input, SHARP_OPTIONS)
         .rotate()
         .resize({ width: maxDimension, height: maxDimension, fit: "inside", withoutEnlargement: true })
         .webp({ quality })

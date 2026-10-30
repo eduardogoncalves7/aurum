@@ -39,12 +39,23 @@ export interface Agendamento extends AgendamentoInput {
 
 class ValidationError extends Error {}
 
-function validateAndNormalize(input: AgendamentoInput): AgendamentoInput {
+function validateAndNormalize(rawInput: unknown): AgendamentoInput {
+  if (!rawInput || typeof rawInput !== "object") {
+    throw new ValidationError("Confira os dados do agendamento.");
+  }
+
+  const input = rawInput as Partial<AgendamentoInput>;
+  if (typeof input.telefone !== "string") {
+    throw new ValidationError("Telefone inválido.");
+  }
   const telefone = normalizePhone(input.telefone);
   if (telefone.length !== 10 && telefone.length !== 11) {
     throw new ValidationError("Telefone inválido.");
   }
 
+  if (typeof input.nome !== "string") {
+    throw new ValidationError("Nome é obrigatório.");
+  }
   const nome = input.nome.trim().slice(0, MAX_NAME_LENGTH);
   if (!nome) {
     throw new ValidationError("Nome é obrigatório.");
@@ -57,11 +68,28 @@ function validateAndNormalize(input: AgendamentoInput): AgendamentoInput {
   if (!Array.isArray(input.servicos) || input.servicos.length === 0) {
     throw new ValidationError("Selecione ao menos um serviço.");
   }
+  if (input.servicos.some((service) => (
+    !service ||
+    typeof service !== "object" ||
+    typeof service.id !== "string" ||
+    typeof service.nome !== "string" ||
+    typeof service.preco !== "number" ||
+    !Number.isFinite(service.preco) ||
+    service.preco < 0
+  ))) {
+    throw new ValidationError("Serviço inválido.");
+  }
 
+  if (typeof input.data !== "string") {
+    throw new ValidationError("Data inválida.");
+  }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.data)) {
     throw new ValidationError("Data inválida.");
   }
 
+  if (typeof input.horario !== "string") {
+    throw new ValidationError("Horário inválido.");
+  }
   if (!/^\d{2}:\d{2}$/.test(input.horario)) {
     throw new ValidationError("Horário inválido.");
   }
@@ -75,11 +103,11 @@ function validateAndNormalize(input: AgendamentoInput): AgendamentoInput {
     throw new ValidationError("Valor estimado inválido.");
   }
 
-  return { ...input, telefone, nome, valorEstimado };
+  return { ...input, telefone, nome, valorEstimado } as AgendamentoInput;
 }
 
 export async function createAgendamento(
-  rawInput: AgendamentoInput,
+  rawInput: unknown,
   accessHash: string
 ): Promise<Agendamento> {
   const input = validateAndNormalize(rawInput);
@@ -143,6 +171,18 @@ export async function listAllAgendamentos(): Promise<Agendamento[]> {
   const pool = getPool();
   const result = await pool.query(`SELECT * FROM ${quotedDbSchema()}.agendamentos ORDER BY criado_em DESC`);
   return result.rows.map(mapRow);
+}
+
+export async function updateAgendamentoStatus(
+  id: string,
+  status: AgendamentoStatus,
+): Promise<Agendamento | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const result = await getPool().query(
+    `UPDATE ${quotedDbSchema()}.agendamentos SET status = $2 WHERE id = $1 RETURNING *`,
+    [id, status],
+  );
+  return result.rows[0] ? mapRow(result.rows[0]) : null;
 }
 
 interface AgendamentoRow {

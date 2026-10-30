@@ -82,7 +82,9 @@ BEGIN
       AND actual_history IS DISTINCT FROM ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql','0005_create_catalog_snapshot.sql']
       AND actual_history IS DISTINCT FROM ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql','0005_create_catalog_snapshot.sql','0006_canonical_catalog.sql']
       AND actual_history IS DISTINCT FROM ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql','0005_create_catalog_snapshot.sql','0006_canonical_catalog.sql','0007_private_booking_history.sql']
-      AND actual_history IS DISTINCT FROM ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql','0005_create_catalog_snapshot.sql','0006_canonical_catalog.sql','0007_private_booking_history.sql','0008_whatsapp_quotes.sql'] THEN
+      AND actual_history IS DISTINCT FROM ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql','0005_create_catalog_snapshot.sql','0006_canonical_catalog.sql','0007_private_booking_history.sql','0008_whatsapp_quotes.sql']
+      AND actual_history IS DISTINCT FROM ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql','0005_create_catalog_snapshot.sql','0006_canonical_catalog.sql','0007_private_booking_history.sql','0008_whatsapp_quotes.sql','0009_service_images_webp.sql']
+      AND actual_history IS DISTINCT FROM ARRAY['0001_create_agendamentos.sql','0002_create_catalog_items.sql','0003_expand_catalog.sql','0005_create_catalog_snapshot.sql','0006_canonical_catalog.sql','0007_private_booking_history.sql','0008_whatsapp_quotes.sql','0009_service_images_webp.sql','0010_record_statuses.sql'] THEN
       RAISE EXCEPTION 'AURUM_SOURCE_HISTORY: legacy history does not match this project';
     END IF;
     IF pg_catalog.to_regclass('public.catalog_categories') IS NOT NULL THEN

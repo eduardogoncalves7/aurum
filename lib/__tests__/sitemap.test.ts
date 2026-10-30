@@ -23,30 +23,31 @@ describe("public sitemap", () => {
     vi.mocked(listPublicCatalogItems).mockResolvedValue([item("novo-servico"), item("oculto", true), item("novo-servico")]);
     expect(await sitemap()).toEqual([
       { url: `${origin}/servicos` },
+      { url: `${origin}/politica-de-privacidade` },
       { url: `${origin}/servicos/novo-servico`, lastModified: "2026-10-08T12:00:00.000Z" },
     ]);
   });
 
   it("does not restore factory services when the public catalog is empty", async () => {
     vi.mocked(listPublicCatalogItems).mockResolvedValue([]);
-    expect(await sitemap()).toEqual([{ url: `${origin}/servicos` }]);
+    expect(await sitemap()).toEqual([{ url: `${origin}/servicos` }, { url: `${origin}/politica-de-privacidade` }]);
   });
 
   it("uses visible factory services when the database is unavailable", async () => {
     vi.mocked(listPublicCatalogItems).mockRejectedValue(new Error("offline"));
     const entries = await sitemap();
-    expect(entries.slice(1)).toEqual(services.filter((service) => !service.hiddenFromCatalog).map((service) => ({ url: `${origin}/servicos/${encodeURIComponent(service.id)}` })));
+    expect(entries.slice(2)).toEqual(services.filter((service) => !service.hiddenFromCatalog).map((service) => ({ url: `${origin}/servicos/${encodeURIComponent(service.id)}` })));
   });
 
   it("reads availability again on subsequent requests", async () => {
     vi.mocked(listPublicCatalogItems).mockResolvedValueOnce([item("promocao")]).mockResolvedValueOnce([]);
+    expect(await sitemap()).toHaveLength(3);
     expect(await sitemap()).toHaveLength(2);
-    expect(await sitemap()).toHaveLength(1);
   });
 
   it("encodes slugs and omits invalid modification dates", async () => {
     vi.mocked(listPublicCatalogItems).mockResolvedValue([{ ...item("a/b ?"), atualizadoEm: "invalid" }]);
-    expect((await sitemap())[1]).toEqual({ url: `${origin}/servicos/a%2Fb%20%3F` });
+    expect((await sitemap())[2]).toEqual({ url: `${origin}/servicos/a%2Fb%20%3F` });
   });
 
   it("advertises the sitemap in robots and restricts admin/API crawling", () => {

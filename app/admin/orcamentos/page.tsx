@@ -5,7 +5,7 @@ import { Agendamento, AgendamentoStatus } from "@/lib/agendamentos";
 import { vehicleLabelFromAgendamento } from "@/lib/vehicle";
 import { formatCurrency, formatDatePtBr } from "@/lib/formatters";
 import { Badge } from "@/components/ui/Badge";
-import type { Orcamento } from "@/lib/orcamentos";
+import type { Orcamento, OrcamentoStatus } from "@/lib/orcamentos";
 
 const statusLabel: Record<AgendamentoStatus, string> = {
   pending: "Pendente",
@@ -21,10 +21,39 @@ const statusTone: Record<AgendamentoStatus, "neutral" | "gold" | "success" | "wa
   cancelled: "neutral",
 };
 
+const statusOptions: Array<{ value: AgendamentoStatus; label: string }> = [
+  { value: "pending", label: "Pendente" },
+  { value: "confirmed", label: "Confirmado" },
+  { value: "completed", label: "Concluído" },
+  { value: "cancelled", label: "Cancelado" },
+];
+
 export default function AdminAgendamentosPage() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  async function changeStatus(kind: "agendamento" | "orcamento", id: string, status: AgendamentoStatus | OrcamentoStatus) {
+    setSavingId(id);
+    try {
+      const response = await fetch(`/api/admin/${kind === "agendamento" ? "agendamentos" : "orcamentos"}/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) throw new Error("Falha ao atualizar status");
+      if (kind === "agendamento") {
+        setAgendamentos((items) => items.map((item) => item.id === id ? { ...item, status: status as AgendamentoStatus } : item));
+      } else {
+        setOrcamentos((items) => items.map((item) => item.id === id ? { ...item, status: status as OrcamentoStatus } : item));
+      }
+    } catch {
+      setLoadError(true);
+    } finally {
+      setSavingId(null);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/admin/agendamentos")
@@ -70,6 +99,18 @@ export default function AdminAgendamentosPage() {
               <p className="mt-1 text-sm text-muted">{orcamento.telefone} · {vehicleLabelFromAgendamento(orcamento.veiculoTipo, orcamento.veiculoDetalhe)}</p>
               <p className="mt-2 text-sm text-muted">{orcamento.servicos.map((service) => service.nome).join(", ")}</p>
               <p className="mt-2 font-semibold text-gold-light">{formatCurrency(orcamento.valorEstimado)}</p>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <Badge tone={statusTone[orcamento.status]}>{statusLabel[orcamento.status]}</Badge>
+                <select
+                  aria-label={`Status do orçamento de ${orcamento.nome}`}
+                  value={orcamento.status}
+                  disabled={savingId === orcamento.id}
+                  onChange={(event) => void changeStatus("orcamento", orcamento.id, event.target.value as OrcamentoStatus)}
+                  className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground"
+                >
+                  {statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </div>
               <p className="mt-2 text-xs text-muted">Registrado em {new Date(orcamento.criadoEm).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>
             </article>
           ))}
@@ -117,9 +158,20 @@ export default function AdminAgendamentosPage() {
                   {formatCurrency(agendamento.valorEstimado)}
                 </td>
                 <td className="px-4 py-3">
-                  <Badge tone={statusTone[agendamento.status]}>
-                    {statusLabel[agendamento.status]}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge tone={statusTone[agendamento.status]}>
+                      {statusLabel[agendamento.status]}
+                    </Badge>
+                    <select
+                      aria-label={`Status do agendamento de ${agendamento.nome}`}
+                      value={agendamento.status}
+                      disabled={savingId === agendamento.id}
+                      onChange={(event) => void changeStatus("agendamento", agendamento.id, event.target.value as AgendamentoStatus)}
+                      className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground"
+                    >
+                      {statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-muted">
                   {formatDatePtBr(agendamento.data)} · {agendamento.horario}

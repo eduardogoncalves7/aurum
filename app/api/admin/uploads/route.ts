@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
-import { optimizeUploadImage } from "@/lib/upload-image";
+import { getUploadFormat, optimizeUploadImage } from "@/lib/upload-image";
 
 export const runtime = "nodejs";
 
@@ -19,8 +19,14 @@ const ALLOWED_TYPES: Record<string, string> = {
   "image/webp": "webp",
 };
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_MULTIPART_BYTES = MAX_SIZE_BYTES + 64 * 1024;
 
 export async function POST(request: NextRequest) {
+  const contentLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_MULTIPART_BYTES) {
+    return NextResponse.json({ error: "O envio excede o limite de 5MB." }, { status: 413 });
+  }
+
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -42,12 +48,18 @@ export async function POST(request: NextRequest) {
   }
 
   if (file.size > MAX_SIZE_BYTES) {
-    return NextResponse.json({ error: "Arquivo maior que 5MB." }, { status: 400 });
+    return NextResponse.json({ error: "Arquivo maior que 5MB." }, { status: 413 });
   }
 
   let buffer: Buffer;
   try {
-    buffer = await optimizeUploadImage(Buffer.from(await file.arrayBuffer()));
+    buffer = Buffer.from(await file.arrayBuffer());
+    const detectedFormat = await getUploadFormat(buffer);
+    const expectedFormat = extension === "jpg" ? "jpeg" : extension;
+    if (detectedFormat !== expectedFormat) {
+      return NextResponse.json({ error: "O conteúdo da imagem não corresponde ao tipo informado." }, { status: 400 });
+    }
+    buffer = await optimizeUploadImage(buffer);
   } catch {
     return NextResponse.json(
       { error: "Imagem inválida. Envie JPG, PNG ou WEBP sem animação e com até 40 megapixels." },

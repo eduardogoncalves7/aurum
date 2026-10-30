@@ -8,6 +8,13 @@ import {
   revokeBookingAccess,
 } from "@/lib/agendamentos";
 import { BOOKING_ACCESS_COOKIE, bookingCookieOptions, bookingTokenHash, createBookingToken, validBookingToken, sameBookingOrigin } from "@/lib/booking-access";
+import {
+  PUBLIC_WRITE_LIMIT,
+  PUBLIC_WRITE_WINDOW_SECONDS,
+  RequestBodyTooLargeError,
+  consumeRateLimit,
+  readJsonBody,
+} from "@/lib/request-security";
 
 const privateHeaders = { "Cache-Control": "private, no-store", Vary: "Cookie" };
 
@@ -47,10 +54,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   if (!sameBookingOrigin(request)) return NextResponse.json({ error: "Origem inválida." }, { status: 403 });
+  const rateLimit = consumeRateLimit("public-write:agendamentos", request, PUBLIC_WRITE_LIMIT, PUBLIC_WRITE_WINDOW_SECONDS);
+  if (rateLimit.limited) {
+    return NextResponse.json(
+      { error: "Muitas solicitações. Tente novamente em instantes." },
+      { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": String(rateLimit.retryAfter) } },
+    );
+  }
+
   let body: AgendamentoInput;
   try {
-    body = await request.json();
-  } catch {
+    body = await readJsonBody(request) as AgendamentoInput;
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return NextResponse.json({ error: "O envio excede o limite de 64 KB." }, { status: 413 });
+    }
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
 

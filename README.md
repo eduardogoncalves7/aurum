@@ -58,3 +58,10 @@ Uploads do admin aceitam JPG, PNG e WebP de até 5 MB e 40 megapixels, sem anima
 npm ci
 npm run dev
 ```
+
+## Segurança e operação
+
+As correções de segurança, limites, headers, monitoramento e recuperação do
+serviço estão descritas em [`docs/SECURITY-OPERATIONS.md`](docs/SECURITY-OPERATIONS.md).
+Não foram adicionadas novas variáveis de ambiente; credenciais continuam sendo
+variáveis secretas de runtime.

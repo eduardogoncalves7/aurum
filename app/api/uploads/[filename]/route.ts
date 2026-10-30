@@ -19,7 +19,7 @@ export async function GET(
 ) {
   const { filename } = await params;
   const match = /^([a-f0-9-]{36})\.(jpg|png|webp)$/i.exec(filename);
-  if (!match) return new NextResponse("Imagem não encontrada.", { status: 404 });
+  if (!match) return NextResponse.json({ error: "Imagem não encontrada." }, { status: 404 });
 
   const extension = match[2].toLowerCase();
   const filePath = path.join(process.cwd(), "public", "uploads", filename);
@@ -35,9 +35,9 @@ export async function GET(
     });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return new NextResponse("Imagem não encontrada.", { status: 404 });
+      return NextResponse.json({ error: "Imagem não encontrada." }, { status: 404 });
     }
     console.error("Erro ao ler imagem enviada pelo admin.");
-    return new NextResponse("Não foi possível carregar a imagem.", { status: 500 });
+    return NextResponse.json({ error: "Não foi possível carregar a imagem." }, { status: 500 });
   }
 }

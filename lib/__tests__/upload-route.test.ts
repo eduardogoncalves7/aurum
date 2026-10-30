@@ -32,7 +32,7 @@ describe("admin upload route", () => {
     new File(["invalid"], "image.svg", { type: "image/svg+xml" }),
     new File([new Uint8Array(5 * 1024 * 1024 + 1)], "large.jpg", { type: "image/jpeg" }),
   ])("rejects invalid uploads before writing files", async (file) => {
-    expect((await POST(request(file))).status).toBe(400);
+    expect((await POST(request(file))).status).toBe(file instanceof File && file.size > 5 * 1024 * 1024 ? 413 : 400);
     expect(mkdir).not.toHaveBeenCalled();
     expect(writeFile).not.toHaveBeenCalled();
   });
