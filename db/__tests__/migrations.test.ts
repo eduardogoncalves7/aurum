@@ -186,7 +186,7 @@ describe("Postgres schema migration (isolated WASM Postgres, no DATABASE_URL)", 
 
   it("keeps the Docker startup separator even when migrations exit nonzero", () => {
     const docker = readFileSync("Dockerfile", "utf8");
-    expect(docker).toContain('CMD ["sh", "-c", "node scripts/migrate.js; node scripts/convert-existing-uploads.cjs; node server.js"]');
+    expect(docker).toContain('CMD ["sh", "-c", "node scripts/migrate.js & node scripts/convert-existing-uploads.cjs & exec node server.js"]');
   });
   it("does not commit DDL when recording its migration fails, then resumes", async () => {
     const db = open(); await seedLegacy(db);
