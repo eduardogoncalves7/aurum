@@ -62,10 +62,7 @@ USER nextjs
 
 EXPOSE 3000
 
-# Roda as migrações pendentes e sobe o servidor de qualquer forma — mesmo
-# que a migração falhe (ex: Postgres do Coolify ainda subindo no primeiro
-# deploy, ou DATABASE_URL momentaneamente errada), o site continua no ar em
-# modo degradado (o resto do código já trata ausência de banco graciosamente
-# nas páginas públicas). Preferível a derrubar o site inteiro por causa de um
-# problema só na parte de agendamentos/catálogo administrável.
-CMD ["sh", "-c", "node scripts/migrate.js; node scripts/convert-existing-uploads.cjs; node server.js"]
+# Inicia o servidor sem bloquear o healthcheck em uma tentativa de conexão ou
+# lock do Postgres. A migração continua em paralelo e as rotas administrativas
+# só passam a usar a nova coluna depois que ela for aplicada.
+CMD ["sh", "-c", "node scripts/migrate.js & node scripts/convert-existing-uploads.cjs; exec node server.js"]
