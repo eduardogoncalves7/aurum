@@ -14,7 +14,7 @@ import { getInstagramUrl } from "@/lib/instagram";
 export const dynamic = "force-dynamic";
 
 export const metadata = pageMetadata(
-  "Estética automotiva e lava-jato em Coronel Fabriciano",
+  "Estética automotiva em Coronel Fabriciano",
   "Aurum Detailing: estética automotiva em Coronel Fabriciano, no Vale do Aço. Lavagem técnica, higienização, polimento e proteção automotiva. Peça seu orçamento online.",
   "/servicos"
 );
@@ -47,13 +47,13 @@ export default async function ServicosPage() {
       )}
       <div className="mb-4">
         <h1 className="font-display text-4xl font-black text-foreground">
-          Estética automotiva e lava-jato em Coronel Fabriciano
+          Estética automotiva em Coronel Fabriciano
         </h1>
         <p className="mt-2 max-w-2xl text-muted">
           A Aurum Detailing é um centro de estética automotiva em Coronel Fabriciano,
-          no Vale do Aço. Se você procura um lava-jato em Fabriciano, conheça as
-          opções de lavagem técnica, higienização interna, polimento e proteção
-          automotiva. Escolha os serviços e monte seu orçamento online, sem cadastro.
+          no Vale do Aço. Conheça nossas opções de lavagem técnica, higienização
+          interna, polimento e proteção automotiva. Escolha os serviços e monte seu
+          orçamento online, sem cadastro.
         </p>
       </div>
 
