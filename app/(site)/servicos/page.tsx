@@ -14,8 +14,8 @@ import { getInstagramUrl } from "@/lib/instagram";
 export const dynamic = "force-dynamic";
 
 export const metadata = pageMetadata(
-  "Estética automotiva em Coronel Fabriciano",
-  "Beleza e proteção para seu veículo.",
+  "Beleza e proteção",
+  "Estética automotiva em Coronel Fabriciano.",
   "/servicos"
 );
 
@@ -47,10 +47,10 @@ export default async function ServicosPage() {
       )}
       <div className="mb-4">
         <h1 className="font-display text-4xl font-black text-foreground">
-          Estética automotiva em Coronel Fabriciano
+          Beleza e proteção
         </h1>
         <p className="mt-2 max-w-2xl text-muted">
-          Beleza e proteção para seu veículo.
+          Estética automotiva em Coronel Fabriciano.
         </p>
       </div>
 
@@ -120,7 +120,7 @@ function buildLocalBusinessJsonLd(address: string, phone: string, instagram: str
     "@type": "AutoWash",
     "@id": `${getSiteUrl()}/servicos#local-business`,
     name: "Aurum Detailing",
-    description: "Beleza e proteção para seu veículo.",
+    description: "Estética automotiva em Coronel Fabriciano.",
     url: `${getSiteUrl()}/servicos`,
     telephone: `+${phone.replace(/\D/g, "")}`,
     address: postalAddress,
