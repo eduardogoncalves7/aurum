@@ -8,6 +8,7 @@ import {
   FileText,
   Wrench,
   Sparkles,
+  QrCode,
   ArrowLeft,
   ExternalLink,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const links = [
   { href: "/admin/orcamentos", label: "Orçamentos e agenda", icon: FileText },
   { href: "/admin/servicos", label: "Serviços", icon: Wrench },
   { href: "/admin/promocoes", label: "Promoções", icon: Sparkles },
+  { href: "/qrcode", label: "QR Code", icon: QrCode },
 ];
 
 export function AdminNav({ externalLinks }: { externalLinks: AdminExternalLinks }) {
