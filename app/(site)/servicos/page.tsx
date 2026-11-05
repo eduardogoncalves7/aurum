@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = pageMetadata(
   "Estética automotiva em Coronel Fabriciano",
-  "Aurum Detailing: estética automotiva em Coronel Fabriciano, no Vale do Aço. Lavagem técnica, higienização, polimento e proteção automotiva. Peça seu orçamento online.",
+  "Beleza e proteção para seu veículo.",
   "/servicos"
 );
 
@@ -50,10 +50,7 @@ export default async function ServicosPage() {
           Estética automotiva em Coronel Fabriciano
         </h1>
         <p className="mt-2 max-w-2xl text-muted">
-          A Aurum Detailing é um centro de estética automotiva em Coronel Fabriciano,
-          no Vale do Aço. Conheça nossas opções de lavagem técnica, higienização
-          interna, polimento e proteção automotiva. Escolha os serviços e monte seu
-          orçamento online, sem cadastro.
+          Beleza e proteção para seu veículo.
         </p>
       </div>
 
@@ -123,7 +120,7 @@ function buildLocalBusinessJsonLd(address: string, phone: string, instagram: str
     "@type": "AutoWash",
     "@id": `${getSiteUrl()}/servicos#local-business`,
     name: "Aurum Detailing",
-    description: "Estética automotiva, lavagem técnica, higienização, polimento e proteção automotiva em Coronel Fabriciano, no Vale do Aço.",
+    description: "Beleza e proteção para seu veículo.",
     url: `${getSiteUrl()}/servicos`,
     telephone: `+${phone.replace(/\D/g, "")}`,
     address: postalAddress,
